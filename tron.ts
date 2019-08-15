@@ -83,39 +83,43 @@ const shift: {[dir in Dir]: (p: Pos) => Pos} = {
 const dirs: Dir[] = ['LEFT', 'RIGHT', 'UP', 'DOWN'];
 shuffle(dirs);
 
+type Way = {start: Pos; dist: number};
 
-function trace(prevPos: Pos, dir: Dir): [number, Pos] {
-    let r;
+function trace(prevPos: Pos, dir: Dir): {dist: number; lastPos: Pos} {
+    let dist;
     let pos;
-    for (r = 0; r < 100; r++) {
+    for (dist = 0; dist < 100; dist++) {
         pos = shift[dir](prevPos);
         if (!state.isPosEmpty(pos)) break;
         prevPos = pos;
     }
-    return [r, prevPos];
+    return {dist, lastPos: prevPos};
 }
 
-function bestDir(pos: Pos): [Dir, number] {
-    let maxRunway = 0;
+function bestDir(pos: Pos, iterationsLeft = 5): {dir: Dir; dist: number} {
     let outputDir = dirs[0];
+    let maxDist = 0;
+    if (!iterationsLeft) return {dir: outputDir, dist: 0}
     dirs.forEach(dir => {
-        const [r] = trace(pos, dir)
-        if (r > maxRunway) {
-            maxRunway = r;
+        const {dist: firstDist, lastPos} = trace(pos, dir)
+        const restDist = firstDist > 0 ? bestDir(lastPos, iterationsLeft-1).dist : 0;
+        const dist = firstDist + restDist;
+        if (dist > maxDist) {
+            maxDist = dist;
             outputDir = dir;
         }
     })
-    return [outputDir, maxRunway];
+    return {dir: outputDir, dist: maxDist};
 }
 
 for (;;) {
     state.append(readState());
     const currentPos = last(state.me) as Pos;
 
-    const [outputDir] = bestDir(currentPos);
+    const {dir} = bestDir(currentPos);
 
     console.error(dirs.map(dir => [dir, trace(currentPos, dir)]));
 
     // console.error(state.dump());
-    console.log(outputDir)
+    console.log(dir)
 }
