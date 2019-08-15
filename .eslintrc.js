@@ -9,8 +9,8 @@ module.exports = {
         node: true
     },
     extends: [
-        "eslint:recommended",
-        "plugin:@typescript-eslint/eslint-recommended",
+        "standard",
+        "plugin:@typescript-eslint/standard",
         "plugin:@typescript-eslint/recommended"
     ],
     plugins: ['@typescript-eslint'],

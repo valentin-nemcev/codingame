@@ -135,7 +135,7 @@ class State {
     }
 }
 
-function bestDir(state: State, pos: Pos, iterationsLeft = 5): {dir: Dir; dist: number} {
+function bestDir(state: State, pos: Pos, iterationsLeft = 100): {dir: Dir; dist: number} {
     let outputDir = dirs[0];
     let maxDist = 0;
     if (!iterationsLeft) return {dir: outputDir, dist: 0}
