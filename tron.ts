@@ -57,50 +57,56 @@ interface Pos {
     y: number;
 }
 
-type CellState = null | number;
-function printState(s: CellState): string {
-    if (s == null) return ' ';
-    else return String(s);
+class Cell {
+    private trailOf = -1;
+
+    toString(): string {
+        if (this.trailOf == -1) return ' ';
+        else return String(this.trailOf);
+    }
+
+    markTrail(playerIndex: number): this {
+        this.trailOf = playerIndex;
+        return this;
+    }
+
+    unmarkTrail(): this {
+        this.trailOf = -1;
+        return this;
+    }
+
+    isEmpty(): boolean {
+        return this.trailOf === -1;
+    }
 }
 
-class State {
+class Grid {
     me: Pos[] = [];
     others: Pos[][] = [];
 
-    private grid: CellState[] = [];
+    private grid: Cell[] = [];
 
     constructor() {
-        this.grid.length = fieldWidth * fieldHeight;
-        this.grid.fill(null);
+        for (let i = 0; i < fieldWidth * fieldHeight; i++)
+            this.grid.push(new Cell());
     }
 
-    private getCell({x, y}: Pos): CellState {
+    private cellAt({x, y}: Pos): Cell {
         return this.grid[y * fieldWidth + x];
-    }
-
-    private setCell({x, y}: Pos, s: CellState): void {
-        this.grid[y * fieldWidth + x] = s;
     }
 
     dump(): string {
         let result = '';
         for (let y = 0; y < fieldHeight; y++) {
             let line = '';
-            for (let x = 0; x < fieldWidth; x++)
-                line += printState(this.getCell({x, y}));
+            for (let x = 0; x < fieldWidth; x++) line += this.cellAt({x, y});
             result += line + '\n';
         }
         return result;
     }
 
     append({posList}: Input): void {
-        // const me = posList[myIndex];
-        // this.me.push(me);
-        // others.forEach((pos, i) => {
-        //     if (!this.others[i]) this.others[i] = [];
-        //     this.others[i].push(pos);
-        // });
-        posList.forEach((pos, player) => this.setCell(pos, player));
+        posList.forEach((pos, player) => this.cellAt(pos).markTrail(player));
     }
 
     isPosEmpty({x, y}: Pos): boolean {
@@ -109,45 +115,48 @@ class State {
             x < fieldWidth &&
             0 <= y &&
             y < fieldHeight &&
-            !this.getCell({x, y})
+            this.cellAt({x, y}).isEmpty()
         );
     }
 
-    trace(prevPos: Pos, dir: Dir): {dist: number; lastPos: Pos} {
+    trace(
+        prevPos: Pos,
+        dir: Dir,
+        playerIndex: number,
+    ): {dist: number; lastPos: Pos} {
         let dist;
         let pos;
         for (dist = 0; dist < 100; dist++) {
             pos = shift[dir](prevPos);
             if (!this.isPosEmpty(pos)) break;
             prevPos = pos;
-            this.setCell(pos, 1);
+            this.cellAt(pos).markTrail(playerIndex);
         }
         return {dist, lastPos: prevPos};
     }
 
     untrace(pos: Pos, dir: Dir, maxDist: number): void {
         for (let dist = 0; dist < maxDist; dist++) {
-            this.setCell(pos, null);
+            this.cellAt(pos).unmarkTrail();
             pos = shift[dir](pos);
         }
     }
 }
 
 function bestDir(
-    state: State,
+    grid: Grid,
     pos: Pos,
-    iterationsLeft = 16,
+    playerIndex: number,
+    iterationsLeft = 64,
 ): {dir: Dir; dist: number} {
     let outputDir = dirs[0];
     let maxDist = 0;
     if (!iterationsLeft) return {dir: outputDir, dist: 0};
     dirs.forEach(dir => {
-        const {dist: firstDist, lastPos} = state.trace(pos, dir);
+        const {dist: firstDist, lastPos} = grid.trace(pos, dir, playerIndex);
         const restDist =
-            firstDist > 0
-                ? bestDir(state, lastPos, iterationsLeft - 1).dist
-                : 0;
-        state.untrace(lastPos, opposite[dir], firstDist);
+            firstDist > 0 ? bestDir(grid, lastPos, iterationsLeft - 1).dist : 0;
+        grid.untrace(lastPos, opposite[dir], firstDist);
         const dist = firstDist + restDist;
         if (dist > maxDist) {
             maxDist = dist;
@@ -159,7 +168,7 @@ function bestDir(
 
 const log = console.error.bind(console);
 {
-    const state = new State();
+    const grid = new Grid();
 
     shuffle(dirs);
 
@@ -172,14 +181,14 @@ const log = console.error.bind(console);
             log('Turn %d: %dms', turn, endHr[1] / 1000000);
         };
 
-        state.append(input);
+        grid.append(input);
         const myPos = input.posList[input.myIndex];
 
         // log(myPos, otherPos);
 
-        const {dir} = bestDir(state, myPos);
+        const {dir} = bestDir(grid, myPos, input.myIndex);
 
-        log(state.dump());
+        log(grid.dump());
         console.log(dir);
         showTime();
     }
