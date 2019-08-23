@@ -19,7 +19,7 @@ module.exports = {
     plugins: ['@typescript-eslint', 'prettier'],
     rules: {
         'prettier/prettier': [
-            'error',
+            'warn',
             {
                 tabWidth: 4,
                 singleQuote: true,
@@ -28,5 +28,6 @@ module.exports = {
                 parser: 'typescript',
             },
         ],
+        curly: ['error', 'multi-line'],
     },
 };
