@@ -15,10 +15,13 @@ function shuffle<T extends Array<unknown>>(a: T): T {
     return a;
 }
 
-function readInts(): number[] {
-    return readline()
-        .split(' ')
-        .map(s => parseInt(s, 10));
+interface Pos {
+    x: number;
+    y: number;
+}
+
+function posToString({x, y}: Pos): string {
+    return `${x}, ${y}`;
 }
 
 type Dir = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
@@ -42,28 +45,42 @@ const deriveDir = (prev: Pos, next: Pos): Dir => {
     );
 };
 
-const opposite: {[dir in Dir]: Dir} = {
+const opposite: {readonly [dir in Dir]: Dir} = {
     LEFT: 'RIGHT',
     RIGHT: 'LEFT',
     UP: 'DOWN',
     DOWN: 'UP',
 };
 
-const dirToString: {[dir in Dir]: string} = {
+const sides: {readonly [dir in Dir]: [Dir, Dir]} = {
+    LEFT: ['UP', 'DOWN'],
+    RIGHT: ['UP', 'DOWN'],
+    UP: ['LEFT', 'RIGHT'],
+    DOWN: ['LEFT', 'RIGHT'],
+};
+
+const dirToString: {readonly [dir in Dir]: string} = {
     LEFT: '<',
     RIGHT: '>',
     UP: '↑',
     DOWN: '↓',
 };
 
+// const lines: string[] = [];
+function readInts(readline: () => string): number[] {
+    const line = readline();
+    if (!line) return [];
+    return line.split(' ').map(s => parseInt(s, 10));
+}
+
 type Input = {myIndex: number; startPosList: Pos[]; posList: Pos[]};
-function readState(): Input {
-    const [playerCount, myIndex] = readInts();
+function readState(readline: () => string): Input | null {
+    const [playerCount, myIndex] = readInts(readline);
+    if (playerCount == null) return null;
     const posList = [];
     const startPosList = [];
     for (let i = 0; i < playerCount; i++) {
-        const [x0, y0, x, y] = readInts();
-        console.error(i, [x0, y0, x, y]);
+        const [x0, y0, x, y] = readInts(readline);
         startPosList.push({x: x0, y: y0});
         posList.push({x, y});
     }
@@ -73,15 +90,6 @@ function readState(): Input {
 
 const gridWidth = 30;
 const gridHeight = 20;
-
-interface Pos {
-    x: number;
-    y: number;
-}
-
-function posToString({x, y}: Pos): string {
-    return `${x}, ${y}`;
-}
 
 class Player {
     pos: Pos;
@@ -102,6 +110,27 @@ class Player {
     stepBack(): void {
         if (!this.dir) return;
         this.pos = shift[opposite[this.dir]](this.pos);
+    }
+    swapDir(newDir: Dir): Dir | null {
+        const prevDir = this.dir;
+        this.dir = newDir;
+        return prevDir;
+    }
+    getAvailableDirs(): Dir[] {
+        if (this.dir == null) return dirs;
+        if (this.isDead) return [];
+        return sides[this.dir];
+    }
+}
+
+function forEachPlayer<T>(
+    arr: T[],
+    startIndex: number,
+    cb: (p: T, i: number) => void,
+): void {
+    for (let i = 0; i < arr.length; i++) {
+        const playerIndex = (startIndex + i) % arr.length;
+        cb(arr[playerIndex], playerIndex);
     }
 }
 
@@ -140,20 +169,27 @@ class Grid {
         }
     }
 
-    private isPosOnGrid({x, y}: Pos): boolean {
+    isPosOnGrid({x, y}: Pos): boolean {
         return 0 <= x && x < gridWidth && 0 <= y && y < gridHeight;
     }
 
-    private cellAt(pos: Pos): Cell {
+    cellAt(pos: Pos): Cell {
         if (!this.isPosOnGrid(pos)) {
-            throw new Error(`Can't access cell outside grid: ${pos}`);
+            throw new Error(
+                `Can't access cell outside grid: ${posToString(pos)}`,
+            );
         }
         return this.grid[pos.y * gridWidth + pos.x];
     }
 
-    private tryCellAt(pos: Pos): Cell | null {
+    tryCellAt(pos: Pos): Cell | null {
         if (this.isPosOnGrid(pos)) return this.grid[pos.y * gridWidth + pos.x];
         else return null;
+    }
+
+    isCellEmpty(pos: Pos): boolean {
+        const cell = this.tryCellAt(pos);
+        return cell != null && cell.isEmpty();
     }
 
     dump(): string {
@@ -187,22 +223,87 @@ class Grid {
             }
             this.step(input);
         } else {
-            for (let i = 0; i < posList.length; i++) {
-                const playerIndex = (myIndex + i) % posList.length;
-                const pos = posList[playerIndex];
-                this.stepPlayer(playerIndex, pos);
-            }
+            forEachPlayer(posList, myIndex, (pos, playerIndex) =>
+                this.stepPlayer(playerIndex, pos),
+            );
         }
     }
 
-    iterate(): {dir: Dir; steps: number}[] {
-        const result = [];
-        for (let i = 0; i < this.players.length; i++) {
-            const playerIndex =
-                (this.lastPlayerIndex + 1 + i) % this.players.length;
-        }
+    forEachPossibleTurn(cb: () => void): void {
+        const players: number[] = [];
+        forEachPlayer(
+            this.players,
+            this.lastPlayerIndex + 1,
+            (_, playerIndex) => players.push(playerIndex),
+        );
+        const iteratePlayer = ([
+            playerIndex,
+            ...restPlayers
+        ]: number[]): void => {
+            if (playerIndex == null) {
+                cb();
+                return;
+            }
+            const player = this.players[playerIndex];
+            if (player.isDead) {
+                iteratePlayer(restPlayers);
+                return;
+            }
 
-        return result;
+            if (this.tryStepNext(playerIndex)) {
+                iteratePlayer(restPlayers);
+                this.stepBack(playerIndex);
+                return;
+            }
+
+            let madeATurn = false;
+            player.getAvailableDirs().forEach(dir => {
+                const prevDir = player.swapDir(dir);
+                if (!this.tryStepNext(playerIndex)) {
+                    player.dir = prevDir;
+                    return;
+                }
+                madeATurn = true;
+                iteratePlayer(restPlayers);
+                this.stepBack(playerIndex);
+                player.dir = prevDir;
+            });
+            if (madeATurn) return;
+
+            player.isDead = true;
+            iteratePlayer(restPlayers);
+            player.isDead = false;
+        };
+        iteratePlayer(players);
+    }
+
+    tryStepNext(playerIndex: number): boolean {
+        const player = this.players[playerIndex];
+        if (!player.tryStepNext()) return false;
+        const cell = this.tryCellAt(player.pos);
+        if (!cell || !cell.isEmpty()) {
+            player.stepBack();
+            return false;
+        }
+        cell.markTrail(playerIndex, player.dir);
+        return true;
+    }
+
+    stepBack(playerIndex: number): void {
+        const player = this.players[playerIndex];
+        const cell = this.cellAt(player.pos);
+        cell.unmarkTrail();
+        player.stepBack();
+    }
+
+    iterate(depth = 0): void {
+        this.forEachPossibleTurn(() => {
+            if (this.players.every(player => player.isDead)) {
+                console.log(depth);
+            } else {
+                this.iterate(depth + 1);
+            }
+        });
     }
 
     trace(
@@ -259,13 +360,16 @@ class Grid {
 }
 
 const log = console.error.bind(console);
-{
-    const grid = new Grid();
-
-    shuffle(dirs);
-
+type Log = typeof log;
+function go(
+    grid: Grid,
+    readline: () => string,
+    log: Log,
+    writeline: (s: string) => void,
+): void {
     for (let turn = 0; ; turn++) {
-        const input = readState();
+        const input = readState(readline);
+        if (input == null) break;
 
         const startHr = process.hrtime();
         const showTime = (): void => {
@@ -280,8 +384,15 @@ const log = console.error.bind(console);
 
         const {dir} = grid.bestDir(myPos, input.myIndex);
 
-        log(grid.dump());
-        console.log(dir);
+        // log(grid.dump());
+        writeline(dir);
         showTime();
+        // console.error(lines.join('\n'));
     }
+}
+
+export {Grid, go};
+if (process.env.NODE_ENV !== 'test') {
+    shuffle(dirs);
+    go(new Grid(), readline, log, console.log.bind(console));
 }

@@ -7,9 +7,12 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "start": "tsc --project .  --watch"
+    "start": "tsc --project ./tsconfig.json --watch",
+    "test": "jest --watch"
+    "test-debug": "node --inspect-brk node_modules/.bin/jest --runInBand --watch"
   },
   "devDependencies": {
+    "@types/jest": "^24.0.18",
     "@types/node": "^12.7.2",
     "@typescript-eslint/eslint-plugin": "^2.0.0",
     "@typescript-eslint/parser": "^2.0.0",
@@ -21,7 +24,9 @@
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
+    "jest": "^24.9.0",
     "prettier": "^1.18.2",
+    "ts-jest": "^24.0.2",
     "typescript": "^3.5.3"
   }
 }

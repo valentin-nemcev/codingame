@@ -1,0 +1,121 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Input works 1`] = `
+"<<<<↑<<<<<<<<<<<<<<<<<<<<<<<<↑
+↓   <<<<<<1 ↑>>>>>>          ↑
+↓>>>>>>>>>>>>                ↑
+                             ↑
+                             ↑
+                             ↑
+                             ↑
+                             ↑
+                             ↑
+                             0
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 1`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓                 
+            ↓                 
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 2`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓                 
+            ↓                 
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 3`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓                 
+            ↓                 
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 4`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓                 
+            ↓                 
+"
+`;
