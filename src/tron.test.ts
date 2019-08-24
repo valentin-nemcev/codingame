@@ -1,34 +1,57 @@
-import {Grid, go} from './tron';
+import {Game, go} from './tron';
 import sampleInput from './sample_input';
 
 describe('Input', () => {
     it('works', () => {
-        const grid = new Grid();
+        const game = new Game();
         const readline = (): string => sampleInput.shift() || '';
-        go(grid, readline, () => {}, () => {});
-        expect(grid.dump()).toMatchSnapshot();
+        go(game, readline, () => {}, () => {});
+        expect(game.grid.dump()).toMatchSnapshot();
     });
 });
 
 describe('Iterate', () => {
     test('forEachPossibleTurn', () => {
-        const grid = new Grid();
-        grid.stepPlayer(0, {x: 1, y: 10});
-        grid.stepPlayer(1, {x: 12, y: 17});
-        grid.stepPlayer(2, {x: 3, y: 5});
-        grid.stepPlayer(0, {x: 2, y: 10});
-        grid.stepPlayer(1, {x: 12, y: 18});
-        const before = grid.dump();
-        grid.forEachPossibleTurn(() => expect(grid.dump()).toMatchSnapshot());
-        const after = grid.dump();
+        const game = new Game();
+        game.stepPlayer(0, {x: 1, y: 10});
+        game.stepPlayer(1, {x: 12, y: 17});
+        game.stepPlayer(2, {x: 3, y: 5});
+        game.stepPlayer(0, {x: 2, y: 10});
+        game.stepPlayer(1, {x: 12, y: 18});
+        const before = game.grid.dump();
+        game.forEachPossibleTurn(() =>
+            expect(game.grid.dump()).toMatchSnapshot(),
+        );
+        const after = game.grid.dump();
         expect(after).toEqual(before);
     });
 
-    test('iterate', () => {
-        const grid = new Grid();
-        grid.stepPlayer(0, {x: 1, y: 10});
-        grid.stepPlayer(1, {x: 12, y: 17});
-        grid.stepPlayer(2, {x: 3, y: 5});
-        grid.iterate();
+    test('iterate lost', () => {
+        const game = new Game();
+        game.stepPlayer(0, {x: 1, y: 1});
+        game.stepPlayer(1, {x: 0, y: 0});
+        game.stepPlayer(0, {x: 2, y: 1});
+        game.stepPlayer(1, {x: 1, y: 0});
+        game.stepPlayer(0, {x: 2, y: 0});
+        // game.stepPlayer(2, {x: 3, y: 5});
+        console.log(game.findBestDir());
+        console.log(game.grid.dump());
+    });
+
+    test('iterate 1', () => {
+        const game = new Game();
+        game.stepPlayer(0, {x: 0, y: 0});
+        game.stepPlayer(1, {x: 12, y: 17});
+        // game.stepPlayer(2, {x: 3, y: 5});
+        console.log(game.findBestDir());
+    });
+
+    test('iterate 2', () => {
+        const game = new Game();
+        game.stepPlayer(0, {x: 0, y: 0});
+        game.stepPlayer(1, {x: 12, y: 17});
+        game.stepPlayer(0, {x: 1, y: 0});
+        // game.stepPlayer(2, {x: 3, y: 5});
+        console.log(game.findBestDir());
     });
 });

@@ -160,8 +160,6 @@ class Cell {
 
 class Grid {
     private grid: Cell[] = [];
-    private players: Player[] = [];
-    private lastPlayerIndex = 0;
 
     constructor() {
         for (let i = 0; i < gridWidth * gridHeight; i++) {
@@ -201,15 +199,37 @@ class Grid {
         }
         return result;
     }
+}
+
+const maxDepth = gridWidth * gridHeight;
+
+class Game {
+    public readonly grid: Grid;
+    private players: Player[] = [];
+    private lastPlayerIndex = 0;
+
+    constructor() {
+        this.grid = new Grid();
+    }
+
+    getScore(playerIndex: number, depth: number): number {
+        let score = depth / maxDepth;
+        if (this.players[playerIndex].isDead) return score + 1;
+        this.players.forEach((player, i) => {
+            if (i === playerIndex) return;
+            if (player.isDead) score += 1 / (this.players.length - 1);
+        });
+        return -score;
+    }
 
     stepPlayer(playerIndex: number, pos: Pos): void {
         if (playerIndex >= this.players.length) {
             this.players[playerIndex] = new Player(pos);
-            this.cellAt(pos).markTrail(playerIndex, null);
+            this.grid.cellAt(pos).markTrail(playerIndex, null);
         } else {
             const player = this.players[playerIndex];
             player.step(pos);
-            this.cellAt(pos).markTrail(playerIndex, player.dir);
+            this.grid.cellAt(pos).markTrail(playerIndex, player.dir);
         }
         this.lastPlayerIndex = playerIndex;
     }
@@ -229,58 +249,10 @@ class Grid {
         }
     }
 
-    forEachPossibleTurn(cb: () => void): void {
-        const players: number[] = [];
-        forEachPlayer(
-            this.players,
-            this.lastPlayerIndex + 1,
-            (_, playerIndex) => players.push(playerIndex),
-        );
-        const iteratePlayer = ([
-            playerIndex,
-            ...restPlayers
-        ]: number[]): void => {
-            if (playerIndex == null) {
-                cb();
-                return;
-            }
-            const player = this.players[playerIndex];
-            if (player.isDead) {
-                iteratePlayer(restPlayers);
-                return;
-            }
-
-            if (this.tryStepNext(playerIndex)) {
-                iteratePlayer(restPlayers);
-                this.stepBack(playerIndex);
-                return;
-            }
-
-            let madeATurn = false;
-            player.getAvailableDirs().forEach(dir => {
-                const prevDir = player.swapDir(dir);
-                if (!this.tryStepNext(playerIndex)) {
-                    player.dir = prevDir;
-                    return;
-                }
-                madeATurn = true;
-                iteratePlayer(restPlayers);
-                this.stepBack(playerIndex);
-                player.dir = prevDir;
-            });
-            if (madeATurn) return;
-
-            player.isDead = true;
-            iteratePlayer(restPlayers);
-            player.isDead = false;
-        };
-        iteratePlayer(players);
-    }
-
     tryStepNext(playerIndex: number): boolean {
         const player = this.players[playerIndex];
         if (!player.tryStepNext()) return false;
-        const cell = this.tryCellAt(player.pos);
+        const cell = this.grid.tryCellAt(player.pos);
         if (!cell || !cell.isEmpty()) {
             player.stepBack();
             return false;
@@ -291,20 +263,114 @@ class Grid {
 
     stepBack(playerIndex: number): void {
         const player = this.players[playerIndex];
-        const cell = this.cellAt(player.pos);
+        const cell = this.grid.cellAt(player.pos);
         cell.unmarkTrail();
         player.stepBack();
     }
 
-    iterate(depth = 0): void {
+    iteratePlayer(
+        [playerIndex, ...restPlayers]: number[],
+        cb: () => void,
+    ): void {
+        if (playerIndex == null) {
+            cb();
+            return;
+        }
+        const player = this.players[playerIndex];
+        if (player.isDead) {
+            this.iteratePlayer(restPlayers, cb);
+            return;
+        }
+
+        if (this.tryStepNext(playerIndex)) {
+            this.iteratePlayer(restPlayers, cb);
+            this.stepBack(playerIndex);
+            return;
+        }
+
+        let madeATurn = false;
+        player.getAvailableDirs().forEach(dir => {
+            const prevDir = player.swapDir(dir);
+            if (!this.tryStepNext(playerIndex)) {
+                player.dir = prevDir;
+                return;
+            }
+            madeATurn = true;
+            this.iteratePlayer(restPlayers, cb);
+            this.stepBack(playerIndex);
+            player.dir = prevDir;
+        });
+        if (madeATurn) return;
+
+        player.isDead = true;
+        this.iteratePlayer(restPlayers, cb);
+        player.isDead = false;
+    }
+
+    forEachPossibleTurn(cb: () => void): void {
+        const players: number[] = [];
+        forEachPlayer(
+            this.players,
+            this.lastPlayerIndex + 1,
+            (_, playerIndex) => players.push(playerIndex),
+        );
+        this.iteratePlayer(players, cb);
+    }
+
+    iterate(
+        cb: (dir: Dir | null, depth: number) => void,
+        depth = 0,
+        dir: Dir | null = null,
+    ): void {
+        const myIndex = (this.lastPlayerIndex + 1) % this.players.length;
         this.forEachPossibleTurn(() => {
-            if (this.players.every(player => player.isDead)) {
-                console.log(depth);
+            if (this.players[myIndex].isDead) {
+                cb(dir, depth);
+                return;
+            }
+            if (depth === 0) {
+                dir = this.players[myIndex].dir;
+            }
+            if (
+                depth >= 100 ||
+                this.players.filter(player => !player.isDead).length <= 1
+            ) {
+                cb(dir, depth);
             } else {
-                this.iterate(depth + 1);
+                this.iterate(cb, depth + 1, dir);
             }
         });
     }
+
+    findBestDir(): Dir | null {
+        const myIndex = (this.lastPlayerIndex + 1) % this.players.length;
+        console.log(myIndex);
+        const scores: {[dir in Dir]: number[]} = {
+            LEFT: [],
+            RIGHT: [],
+            UP: [],
+            DOWN: [],
+        };
+        this.iterate((dir, depth) => {
+            if (dir) scores[dir].push(this.getScore(myIndex, depth));
+        });
+
+        let bestDir = null;
+        let minScore = Infinity;
+        dirs.forEach(dir => {
+            console.log(dir, scores[dir]);
+            const score =
+                scores[dir].reduce((a, b) => a + b, 0) / scores[dir].length;
+            if (isNaN(score)) return;
+            if (score < minScore) {
+                minScore = score;
+                bestDir = dir;
+            }
+        });
+        return bestDir;
+    }
+
+    ///
 
     trace(
         prevPos: Pos,
@@ -315,17 +381,17 @@ class Grid {
         let pos;
         for (dist = 0; dist < 100; dist++) {
             pos = shift[dir](prevPos);
-            const cell = this.tryCellAt(pos);
+            const cell = this.grid.tryCellAt(pos);
             if (!cell || !cell.isEmpty()) break;
             prevPos = pos;
-            this.cellAt(pos).markTrail(playerIndex, dir);
+            this.grid.cellAt(pos).markTrail(playerIndex, dir);
         }
         return {dist, lastPos: prevPos};
     }
 
     untrace(pos: Pos, dir: Dir, maxDist: number): void {
         for (let dist = 0; dist < maxDist; dist++) {
-            this.cellAt(pos).unmarkTrail();
+            this.grid.cellAt(pos).unmarkTrail();
             pos = shift[dir](pos);
         }
     }
@@ -362,7 +428,7 @@ class Grid {
 const log = console.error.bind(console);
 type Log = typeof log;
 function go(
-    grid: Grid,
+    game: Game,
     readline: () => string,
     log: Log,
     writeline: (s: string) => void,
@@ -377,22 +443,22 @@ function go(
             log('Turn %d: %dms', turn, endHr[1] / 1000000);
         };
 
-        grid.step(input);
+        game.step(input);
         const myPos = input.posList[input.myIndex];
 
         // log(myPos, otherPos);
 
-        const {dir} = grid.bestDir(myPos, input.myIndex);
+        const {dir} = game.bestDir(myPos, input.myIndex);
 
-        // log(grid.dump());
+        // log(game.dump());
         writeline(dir);
         showTime();
         // console.error(lines.join('\n'));
     }
 }
 
-export {Grid, go};
+export {Game, go};
 if (process.env.NODE_ENV !== 'test') {
     shuffle(dirs);
-    go(new Grid(), readline, log, console.log.bind(console));
+    go(new Game(), readline, log, console.log.bind(console));
 }
