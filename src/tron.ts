@@ -77,9 +77,9 @@ function readInts(readline: () => string): number[] {
     return line.split(' ').map(s => parseInt(s, 10));
 }
 
-type Input = {myIndex: number; startPosList: Pos[]; posList: Pos[]};
+type Input = {myIdx: number; startPosList: Pos[]; posList: Pos[]};
 function readState(readline: () => string): Input | null {
-    const [playerCount, myIndex] = readInts(readline);
+    const [playerCount, myIdx] = readInts(readline);
     if (playerCount == null) return null;
     const posList = [];
     const startPosList = [];
@@ -89,7 +89,7 @@ function readState(readline: () => string): Input | null {
         posList.push({x, y});
     }
 
-    return {myIndex, startPosList, posList};
+    return {myIdx, startPosList, posList};
 }
 
 const gridWidth = 30;
@@ -127,17 +127,6 @@ class Player {
     }
 }
 
-function forEachPlayer<T>(
-    arr: T[],
-    startIndex: number,
-    cb: (p: T, i: number) => void,
-): void {
-    for (let i = 0; i < arr.length; i++) {
-        const playerIndex = (startIndex + i) % arr.length;
-        cb(arr[playerIndex], playerIndex);
-    }
-}
-
 class Cell {
     private trailOf = -1;
     private dir: null | Dir = null;
@@ -148,8 +137,8 @@ class Cell {
         else return dirToString[this.dir];
     }
 
-    markTrail(playerIndex: number, dir: Dir | null): void {
-        this.trailOf = playerIndex;
+    markTrail(playerIdx: number, dir: Dir | null): void {
+        this.trailOf = playerIdx;
         this.dir = dir;
     }
 
@@ -211,75 +200,77 @@ class Game {
     public readonly grid: Grid;
     public readonly iterator: Iterator;
     players: Player[] = [];
-    lastPlayerIndex = 0;
 
     constructor() {
         this.grid = new Grid();
         this.iterator = new Iterator(this); //eslint-disable-line @typescript-eslint/no-use-before-define
     }
 
-    getScore(playerIndex: number, depth: number): number {
+    getScore(playerIdx: number, depth: number): number {
         let score = depth / maxDepth;
-        if (this.players[playerIndex].isDead) return score + 1;
+        if (this.players[playerIdx].isDead) return score + 1;
         this.players.forEach((player, i) => {
-            if (i === playerIndex) return;
+            if (i === playerIdx) return;
             if (player.isDead) score += 1 / (this.players.length - 1);
         });
         return -score;
     }
 
-    distToClosestPlayerFor(playerIndex: number): number {
+    distToClosestPlayerFor(playerIdx: number): number {
         let closestDist = Number.MAX_SAFE_INTEGER;
-        const player = this.players[playerIndex];
+        const player = this.players[playerIdx];
         this.players.forEach((p, i) => {
-            if (i === playerIndex || p.isDead) return;
+            if (i === playerIdx || p.isDead) return;
             const dist = getDist(p.pos, player.pos);
             if (dist < closestDist) closestDist = dist;
         });
         return closestDist;
     }
 
-    stepPlayer(playerIndex: number, pos: Pos): void {
-        if (playerIndex >= this.players.length) {
-            this.players[playerIndex] = new Player(pos);
-            this.grid.cellAt(pos).markTrail(playerIndex, null);
-        } else {
-            const player = this.players[playerIndex];
-            player.step(pos);
-            this.grid.cellAt(pos).markTrail(playerIndex, player.dir);
-        }
-        this.lastPlayerIndex = playerIndex;
+    addPlayer(pos: Pos): void {
+        this.players.push(new Player(pos));
+        this.grid.cellAt(pos).markTrail(this.players.length - 1, null);
+    }
+
+    stepPlayer(playerIdx: number, pos: Pos): void {
+        const player = this.players[playerIdx];
+        player.step(pos);
+        this.grid.cellAt(pos).markTrail(playerIdx, player.dir);
     }
 
     step(input: Input): void {
-        const {myIndex, posList, startPosList} = input;
-        if (this.players.length === 0 && myIndex > 0) {
-            for (let playerIndex = 0; playerIndex < myIndex; playerIndex++) {
-                const pos = startPosList[playerIndex];
-                this.stepPlayer(playerIndex, pos);
-            }
-            this.step(input);
+        const {myIdx, posList, startPosList} = input;
+        if (this.players.length === 0) {
+            startPosList.forEach((_, playerIdx) => {
+                const inputIdx = (playerIdx + myIdx) % startPosList.length;
+                this.addPlayer(startPosList[inputIdx]);
+                if (playerIdx + myIdx >= startPosList.length) {
+                    this.stepPlayer(playerIdx, posList[inputIdx]);
+                }
+            });
         } else {
-            forEachPlayer(posList, myIndex, (pos, playerIndex) =>
-                this.stepPlayer(playerIndex, pos),
-            );
+            posList.forEach((_, playerIdx) => {
+                const inputIdx = (playerIdx + myIdx) % posList.length;
+                const pos = posList[inputIdx];
+                this.stepPlayer(playerIdx, pos);
+            });
         }
     }
 
-    tryStepNext(playerIndex: number): boolean {
-        const player = this.players[playerIndex];
+    tryStepNext(playerIdx: number): boolean {
+        const player = this.players[playerIdx];
         if (!player.tryStepNext()) return false;
         const cell = this.grid.tryCellAt(player.pos);
         if (!cell || !cell.isEmpty()) {
             player.stepBack();
             return false;
         }
-        cell.markTrail(playerIndex, player.dir);
+        cell.markTrail(playerIdx, player.dir);
         return true;
     }
 
-    stepBack(playerIndex: number): void {
-        const player = this.players[playerIndex];
+    stepBack(playerIdx: number): void {
+        const player = this.players[playerIdx];
         const cell = this.grid.cellAt(player.pos);
         cell.unmarkTrail();
         player.stepBack();
@@ -305,40 +296,37 @@ class Iterator {
         // log('Turn %d: %dms', turn, endHr[1] / 1000000);
     }
 
-    iteratePlayer(
-        [playerIndex, ...restPlayers]: number[],
-        cb: () => void,
-    ): void {
-        if (playerIndex == null) {
+    iteratePlayer([playerIdx, ...restPlayers]: number[], cb: () => void): void {
+        if (playerIdx == null) {
             cb();
             return;
         }
-        const player = this.game.players[playerIndex];
+        const player = this.game.players[playerIdx];
         if (player.isDead) {
             this.iteratePlayer(restPlayers, cb);
             return;
         }
 
         let madeATurn = false;
-        if (this.game.tryStepNext(playerIndex)) {
+        if (this.game.tryStepNext(playerIdx)) {
             madeATurn = true;
             this.iteratePlayer(restPlayers, cb);
-            this.game.stepBack(playerIndex);
+            this.game.stepBack(playerIdx);
         }
 
-        if (madeATurn && this.game.distToClosestPlayerFor(playerIndex) >= 10) {
+        if (madeATurn && this.game.distToClosestPlayerFor(playerIdx) >= 10) {
             return;
         }
 
         player.getAvailableDirs().forEach(dir => {
             const prevDir = player.swapDir(dir);
-            if (!this.game.tryStepNext(playerIndex)) {
+            if (!this.game.tryStepNext(playerIdx)) {
                 player.dir = prevDir;
                 return;
             }
             madeATurn = true;
             this.iteratePlayer(restPlayers, cb);
-            this.game.stepBack(playerIndex);
+            this.game.stepBack(playerIdx);
             player.dir = prevDir;
         });
         if (madeATurn) return;
@@ -350,11 +338,7 @@ class Iterator {
 
     forEachPossibleTurn(cb: () => void): void {
         const players: number[] = [];
-        forEachPlayer(
-            this.game.players,
-            this.game.lastPlayerIndex + 1,
-            (_, playerIndex) => players.push(playerIndex),
-        );
+        this.game.players.forEach((_, playerIdx) => players.push(playerIdx));
         this.iteratePlayer(players, cb);
     }
 
@@ -363,15 +347,13 @@ class Iterator {
         depth = 0,
         dir: Dir | null = null,
     ): void {
-        const myIndex =
-            (this.game.lastPlayerIndex + 1) % this.game.players.length;
         this.forEachPossibleTurn(() => {
-            if (this.game.players[myIndex].isDead) {
+            if (this.game.players[0].isDead) {
                 cb(dir, depth);
                 return;
             }
             if (depth === 0) {
-                dir = this.game.players[myIndex].dir;
+                dir = this.game.players[0].dir;
             }
             if (
                 depth >= 4 ||
@@ -386,8 +368,6 @@ class Iterator {
     }
 
     findBestDir(): Dir | null {
-        const myIndex =
-            (this.game.lastPlayerIndex + 1) % this.game.players.length;
         const scores: {[dir in Dir]: number[]} = {
             LEFT: [],
             RIGHT: [],
@@ -395,7 +375,7 @@ class Iterator {
             DOWN: [],
         };
         this.iterate((dir, depth) => {
-            if (dir) scores[dir].push(this.game.getScore(myIndex, depth));
+            if (dir) scores[dir].push(this.game.getScore(0, depth));
         });
 
         let bestDir = null;

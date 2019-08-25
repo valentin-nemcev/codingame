@@ -2,7 +2,7 @@
 
 exports[`Input works 1`] = `
 "<<<<↑<<<<<<<<<<<<<<<<<<<<<<<<↑
-↓   <<<<<<1 ↑>>>>>>          ↑
+↓   <<<<<<0 ↑>>>>>>          ↑
 ↓>>>>>>>>>>>>                ↑
                              ↑
                              ↑
@@ -10,7 +10,7 @@ exports[`Input works 1`] = `
                              ↑
                              ↑
                              ↑
-                             0
+                             1
                               
                               
                               
@@ -139,8 +139,8 @@ exports[`Iterate forEachPossibleTurn 5`] = `
                               
                               
             1                 
-           <↓                 
-                              
+            ↓                 
+            ↓                 
 "
 `;
 
@@ -150,7 +150,7 @@ exports[`Iterate forEachPossibleTurn 6`] = `
                               
                               
                               
-  <2                          
+   2>                         
                               
                               
                               
@@ -163,8 +163,8 @@ exports[`Iterate forEachPossibleTurn 6`] = `
                               
                               
             1                 
-            ↓>                
-                              
+            ↓                 
+            ↓                 
 "
 `;
 
@@ -173,14 +173,14 @@ exports[`Iterate forEachPossibleTurn 7`] = `
                               
                               
                               
-                              
-  <2                          
-                              
-                              
+   ↑                          
+   2                          
                               
                               
+                              
+  ↑                           
  0>                           
-  ↓                           
+                              
                               
                               
                               
@@ -198,21 +198,21 @@ exports[`Iterate forEachPossibleTurn 8`] = `
                               
                               
                               
-  <2                          
+   2                          
+   ↓                          
                               
                               
-                              
-                              
+  ↑                           
  0>                           
-  ↓                           
+                              
                               
                               
                               
                               
                               
             1                 
-           <↓                 
-                              
+            ↓                 
+            ↓                 
 "
 `;
 
@@ -235,8 +235,8 @@ exports[`Iterate forEachPossibleTurn 9`] = `
                               
                               
             1                 
-            ↓>                
-                              
+            ↓                 
+            ↓                 
 "
 `;
 
@@ -251,8 +251,8 @@ exports[`Iterate forEachPossibleTurn 10`] = `
                               
                               
                               
- 0>>                          
-                              
+ 0>                           
+  ↓                           
                               
                               
                               
@@ -269,22 +269,22 @@ exports[`Iterate forEachPossibleTurn 11`] = `
                               
                               
                               
-                              
-   2>                         
-                              
-                              
+   ↑                          
+   2                          
                               
                               
- 0>>                          
                               
+                              
+ 0>                           
+  ↓                           
                               
                               
                               
                               
                               
             1                 
-           <↓                 
-                              
+            ↓                 
+            ↓                 
 "
 `;
 
@@ -294,534 +294,6 @@ exports[`Iterate forEachPossibleTurn 12`] = `
                               
                               
                               
-   2>                         
-                              
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 13`] = `
-"                              
-                              
-                              
-                              
-                              
-   2>                         
-                              
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 14`] = `
-"                              
-                              
-                              
-                              
-                              
-   2>                         
-                              
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 15`] = `
-"                              
-                              
-                              
-                              
-                              
-   2>                         
-                              
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 16`] = `
-"                              
-                              
-                              
-                              
-                              
-   2>                         
-                              
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 17`] = `
-"                              
-                              
-                              
-                              
-                              
-   2>                         
-                              
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 18`] = `
-"                              
-                              
-                              
-                              
-                              
-   2>                         
-                              
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 19`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 20`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 21`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 22`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 23`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 24`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 25`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 26`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 27`] = `
-"                              
-                              
-                              
-                              
-   ↑                          
-   2                          
-                              
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 28`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 29`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 30`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-                              
- 0>>                          
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 31`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓                 
-            ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 32`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 33`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-  ↑                           
- 0>                           
-                              
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 34`] = `
-"                              
-                              
-                              
-                              
-                              
    2                          
    ↓                          
                               
@@ -837,53 +309,5 @@ exports[`Iterate forEachPossibleTurn 34`] = `
             1                 
             ↓                 
             ↓                 
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 35`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-           <↓                 
-                              
-"
-`;
-
-exports[`Iterate forEachPossibleTurn 36`] = `
-"                              
-                              
-                              
-                              
-                              
-   2                          
-   ↓                          
-                              
-                              
-                              
- 0>                           
-  ↓                           
-                              
-                              
-                              
-                              
-                              
-            1                 
-            ↓>                
-                              
 "
 `;
