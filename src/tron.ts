@@ -24,6 +24,10 @@ function posToString({x, y}: Pos): string {
     return `${x}, ${y}`;
 }
 
+function getDist(a: Pos, b: Pos): number {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
 type Dir = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
 const dirs: Dir[] = ['LEFT', 'RIGHT', 'UP', 'DOWN'];
 const shift: {[dir in Dir]: (p: Pos) => Pos} = {
@@ -205,11 +209,13 @@ const maxDepth = gridWidth * gridHeight;
 
 class Game {
     public readonly grid: Grid;
-    private players: Player[] = [];
-    private lastPlayerIndex = 0;
+    public readonly iterator: Iterator;
+    players: Player[] = [];
+    lastPlayerIndex = 0;
 
     constructor() {
         this.grid = new Grid();
+        this.iterator = new Iterator(this); //eslint-disable-line @typescript-eslint/no-use-before-define
     }
 
     getScore(playerIndex: number, depth: number): number {
@@ -220,6 +226,17 @@ class Game {
             if (player.isDead) score += 1 / (this.players.length - 1);
         });
         return -score;
+    }
+
+    distToClosestPlayerFor(playerIndex: number): number {
+        let closestDist = Number.MAX_SAFE_INTEGER;
+        const player = this.players[playerIndex];
+        this.players.forEach((p, i) => {
+            if (i === playerIndex || p.isDead) return;
+            const dist = getDist(p.pos, player.pos);
+            if (dist < closestDist) closestDist = dist;
+        });
+        return closestDist;
     }
 
     stepPlayer(playerIndex: number, pos: Pos): void {
@@ -267,6 +284,26 @@ class Game {
         cell.unmarkTrail();
         player.stepBack();
     }
+}
+
+class Iterator {
+    constructor(readonly game: Game) {
+        this.startTurn(250);
+    }
+
+    private timeLimit = Number.MAX_SAFE_INTEGER;
+    private startTs = Date.now();
+
+    startTurn(timeLimit: number): void {
+        this.timeLimit = timeLimit;
+        this.startTs = Date.now();
+    }
+    hasTimeLeft(): boolean {
+        const ms = Date.now() - this.startTs;
+        // console.log(ms);
+        return ms < this.timeLimit;
+        // log('Turn %d: %dms', turn, endHr[1] / 1000000);
+    }
 
     iteratePlayer(
         [playerIndex, ...restPlayers]: number[],
@@ -276,28 +313,32 @@ class Game {
             cb();
             return;
         }
-        const player = this.players[playerIndex];
+        const player = this.game.players[playerIndex];
         if (player.isDead) {
             this.iteratePlayer(restPlayers, cb);
             return;
         }
 
-        if (this.tryStepNext(playerIndex)) {
+        let madeATurn = false;
+        if (this.game.tryStepNext(playerIndex)) {
+            madeATurn = true;
             this.iteratePlayer(restPlayers, cb);
-            this.stepBack(playerIndex);
+            this.game.stepBack(playerIndex);
+        }
+
+        if (madeATurn && this.game.distToClosestPlayerFor(playerIndex) >= 10) {
             return;
         }
 
-        let madeATurn = false;
         player.getAvailableDirs().forEach(dir => {
             const prevDir = player.swapDir(dir);
-            if (!this.tryStepNext(playerIndex)) {
+            if (!this.game.tryStepNext(playerIndex)) {
                 player.dir = prevDir;
                 return;
             }
             madeATurn = true;
             this.iteratePlayer(restPlayers, cb);
-            this.stepBack(playerIndex);
+            this.game.stepBack(playerIndex);
             player.dir = prevDir;
         });
         if (madeATurn) return;
@@ -310,8 +351,8 @@ class Game {
     forEachPossibleTurn(cb: () => void): void {
         const players: number[] = [];
         forEachPlayer(
-            this.players,
-            this.lastPlayerIndex + 1,
+            this.game.players,
+            this.game.lastPlayerIndex + 1,
             (_, playerIndex) => players.push(playerIndex),
         );
         this.iteratePlayer(players, cb);
@@ -322,18 +363,20 @@ class Game {
         depth = 0,
         dir: Dir | null = null,
     ): void {
-        const myIndex = (this.lastPlayerIndex + 1) % this.players.length;
+        const myIndex =
+            (this.game.lastPlayerIndex + 1) % this.game.players.length;
         this.forEachPossibleTurn(() => {
-            if (this.players[myIndex].isDead) {
+            if (this.game.players[myIndex].isDead) {
                 cb(dir, depth);
                 return;
             }
             if (depth === 0) {
-                dir = this.players[myIndex].dir;
+                dir = this.game.players[myIndex].dir;
             }
             if (
-                depth >= 100 ||
-                this.players.filter(player => !player.isDead).length <= 1
+                depth >= 4 ||
+                !this.hasTimeLeft() ||
+                this.game.players.filter(player => !player.isDead).length <= 1
             ) {
                 cb(dir, depth);
             } else {
@@ -343,8 +386,8 @@ class Game {
     }
 
     findBestDir(): Dir | null {
-        const myIndex = (this.lastPlayerIndex + 1) % this.players.length;
-        console.log(myIndex);
+        const myIndex =
+            (this.game.lastPlayerIndex + 1) % this.game.players.length;
         const scores: {[dir in Dir]: number[]} = {
             LEFT: [],
             RIGHT: [],
@@ -352,13 +395,12 @@ class Game {
             DOWN: [],
         };
         this.iterate((dir, depth) => {
-            if (dir) scores[dir].push(this.getScore(myIndex, depth));
+            if (dir) scores[dir].push(this.game.getScore(myIndex, depth));
         });
 
         let bestDir = null;
         let minScore = Infinity;
         dirs.forEach(dir => {
-            console.log(dir, scores[dir]);
             const score =
                 scores[dir].reduce((a, b) => a + b, 0) / scores[dir].length;
             if (isNaN(score)) return;
@@ -368,60 +410,6 @@ class Game {
             }
         });
         return bestDir;
-    }
-
-    ///
-
-    trace(
-        prevPos: Pos,
-        dir: Dir,
-        playerIndex: number,
-    ): {dist: number; lastPos: Pos} {
-        let dist;
-        let pos;
-        for (dist = 0; dist < 100; dist++) {
-            pos = shift[dir](prevPos);
-            const cell = this.grid.tryCellAt(pos);
-            if (!cell || !cell.isEmpty()) break;
-            prevPos = pos;
-            this.grid.cellAt(pos).markTrail(playerIndex, dir);
-        }
-        return {dist, lastPos: prevPos};
-    }
-
-    untrace(pos: Pos, dir: Dir, maxDist: number): void {
-        for (let dist = 0; dist < maxDist; dist++) {
-            this.grid.cellAt(pos).unmarkTrail();
-            pos = shift[dir](pos);
-        }
-    }
-
-    bestDir(
-        pos: Pos,
-        playerIndex: number,
-        iterationsLeft = 64,
-    ): {dir: Dir; dist: number} {
-        let outputDir = dirs[0];
-        let maxDist = 0;
-        if (!iterationsLeft) return {dir: outputDir, dist: 0};
-        dirs.forEach(dir => {
-            const {dist: firstDist, lastPos} = this.trace(
-                pos,
-                dir,
-                playerIndex,
-            );
-            const restDist =
-                firstDist > 0
-                    ? this.bestDir(lastPos, iterationsLeft - 1).dist
-                    : 0;
-            this.untrace(lastPos, opposite[dir], firstDist);
-            const dist = firstDist + restDist;
-            if (dist > maxDist) {
-                maxDist = dist;
-                outputDir = dir;
-            }
-        });
-        return {dir: outputDir, dist: maxDist};
     }
 }
 
@@ -434,6 +422,7 @@ function go(
     writeline: (s: string) => void,
 ): void {
     for (let turn = 0; ; turn++) {
+        game.iterator.startTurn(150);
         const input = readState(readline);
         if (input == null) break;
 
@@ -444,14 +433,13 @@ function go(
         };
 
         game.step(input);
-        const myPos = input.posList[input.myIndex];
 
         // log(myPos, otherPos);
 
-        const {dir} = game.bestDir(myPos, input.myIndex);
+        const dir = game.iterator.findBestDir();
 
         // log(game.dump());
-        writeline(dir);
+        writeline(dir || 'AAAAA!');
         showTime();
         // console.error(lines.join('\n'));
     }
