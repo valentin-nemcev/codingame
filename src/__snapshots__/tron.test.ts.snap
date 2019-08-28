@@ -130,6 +130,198 @@ exports[`Iterate forEachPossibleTurn 5`] = `
                               
                               
                               
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 6`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 7`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 8`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 9`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 10`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 11`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 12`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+                              
+ 0>>                          
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 13`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
   ↑                           
  0>                           
                               
@@ -144,7 +336,7 @@ exports[`Iterate forEachPossibleTurn 5`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 6`] = `
+exports[`Iterate forEachPossibleTurn 14`] = `
 "                              
                               
                               
@@ -168,7 +360,7 @@ exports[`Iterate forEachPossibleTurn 6`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 7`] = `
+exports[`Iterate forEachPossibleTurn 15`] = `
 "                              
                               
                               
@@ -192,7 +384,7 @@ exports[`Iterate forEachPossibleTurn 7`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 8`] = `
+exports[`Iterate forEachPossibleTurn 16`] = `
 "                              
                               
                               
@@ -216,7 +408,199 @@ exports[`Iterate forEachPossibleTurn 8`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 9`] = `
+exports[`Iterate forEachPossibleTurn 17`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 18`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 19`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 20`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 21`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 22`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 23`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 24`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+  ↑                           
+ 0>                           
+                              
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 25`] = `
 "                              
                               
                               
@@ -240,7 +624,7 @@ exports[`Iterate forEachPossibleTurn 9`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 10`] = `
+exports[`Iterate forEachPossibleTurn 26`] = `
 "                              
                               
                               
@@ -264,7 +648,7 @@ exports[`Iterate forEachPossibleTurn 10`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 11`] = `
+exports[`Iterate forEachPossibleTurn 27`] = `
 "                              
                               
                               
@@ -288,7 +672,7 @@ exports[`Iterate forEachPossibleTurn 11`] = `
 "
 `;
 
-exports[`Iterate forEachPossibleTurn 12`] = `
+exports[`Iterate forEachPossibleTurn 28`] = `
 "                              
                               
                               
@@ -310,4 +694,214 @@ exports[`Iterate forEachPossibleTurn 12`] = `
             ↓                 
             ↓                 
 "
+`;
+
+exports[`Iterate forEachPossibleTurn 29`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 30`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 31`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 32`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+           <↓                 
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 33`] = `
+"                              
+                              
+                              
+                              
+                              
+  <2                          
+                              
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 34`] = `
+"                              
+                              
+                              
+                              
+                              
+   2>                         
+                              
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 35`] = `
+"                              
+                              
+                              
+                              
+   ↑                          
+   2                          
+                              
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Iterate forEachPossibleTurn 36`] = `
+"                              
+                              
+                              
+                              
+                              
+   2                          
+   ↓                          
+                              
+                              
+                              
+ 0>                           
+  ↓                           
+                              
+                              
+                              
+                              
+                              
+            1                 
+            ↓>                
+                              
+"
+`;
+
+exports[`Score outcomes 2 players 1`] = `
+Object {
+  "DOWN": 0.0003059469906921503,
+  "LEFT": 0.5473581348235581,
+  "RIGHT": 0.45226571569230534,
+  "UP": 0.00007020249344431882,
+}
+`;
+
+exports[`Score outcomes 2 players 2`] = `
+Object {
+  "DOWN": 0.00005024183399644659,
+  "LEFT": 0,
+  "RIGHT": 0,
+  "UP": 0.9999497581660035,
+}
 `;

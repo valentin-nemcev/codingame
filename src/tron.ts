@@ -4,16 +4,16 @@ declare const readline: () => string;
 //     return a[a.length - 1]
 // }
 
-function shuffle<T extends Array<unknown>>(a: T): T {
-    let j, x, i;
-    for (i = a.length - 1; i > 0; i--) {
-        j = Math.floor(Math.random() * (i + 1));
-        x = a[i];
-        a[i] = a[j];
-        a[j] = x;
-    }
-    return a;
-}
+// function shuffle<T extends Array<unknown>>(a: T): T {
+//     let j, x, i;
+//     for (i = a.length - 1; i > 0; i--) {
+//         j = Math.floor(Math.random() * (i + 1));
+//         x = a[i];
+//         a[i] = a[j];
+//         a[j] = x;
+//     }
+//     return a;
+// }
 
 interface Pos {
     x: number;
@@ -130,6 +130,7 @@ class Player {
 class Cell {
     private trailOf = -1;
     private dir: null | Dir = null;
+    private deadTrails: {dir: Dir | null; trailOf: number}[] = [];
 
     toString(): string {
         if (this.trailOf == -1) return ' ';
@@ -137,17 +138,30 @@ class Cell {
         else return dirToString[this.dir];
     }
 
-    markTrail(playerIdx: number, dir: Dir | null): void {
+    markTrail(playerIdx: number, players: Player[]): void {
+        if (!this.isEmpty(players)) {
+            throw new Error("Can't mark already occupied cell");
+        }
+        if (this.trailOf !== -1) {
+            this.deadTrails.push({dir: this.dir, trailOf: this.trailOf});
+        }
         this.trailOf = playerIdx;
-        this.dir = dir;
+        this.dir = players[playerIdx].dir;
     }
 
     unmarkTrail(): void {
-        this.trailOf = -1;
+        const prevTrail = this.deadTrails.pop();
+        if (prevTrail) {
+            this.trailOf = prevTrail.trailOf;
+            this.dir = prevTrail.dir;
+        } else {
+            this.trailOf = -1;
+            this.dir = null;
+        }
     }
 
-    isEmpty(): boolean {
-        return this.trailOf === -1;
+    isEmpty(players: Player[]): boolean {
+        return this.trailOf === -1 || players[this.trailOf].isDead;
     }
 }
 
@@ -178,11 +192,6 @@ class Grid {
         else return null;
     }
 
-    isCellEmpty(pos: Pos): boolean {
-        const cell = this.tryCellAt(pos);
-        return cell != null && cell.isEmpty();
-    }
-
     dump(): string {
         let result = '';
         for (let y = 0; y < gridHeight; y++) {
@@ -194,8 +203,6 @@ class Grid {
     }
 }
 
-const maxDepth = gridWidth * gridHeight;
-
 class Game {
     public readonly grid: Grid;
     public readonly iterator: Iterator;
@@ -206,21 +213,15 @@ class Game {
         this.iterator = new Iterator(this); //eslint-disable-line @typescript-eslint/no-use-before-define
     }
 
-    getScore(playerIdx: number, depth: number): number {
-        let score = depth / maxDepth;
-        if (this.players[playerIdx].isDead) return score + 1;
-        this.players.forEach((player, i) => {
-            if (i === playerIdx) return;
-            if (player.isDead) score += 1 / (this.players.length - 1);
-        });
-        return -score;
+    hasEnded(): boolean {
+        return this.players.filter(player => !player.isDead).length <= 1;
     }
 
-    distToClosestPlayerFor(playerIdx: number): number {
+    distToClosestPlayer(): number {
         let closestDist = Number.MAX_SAFE_INTEGER;
-        const player = this.players[playerIdx];
+        const player = this.players[0];
         this.players.forEach((p, i) => {
-            if (i === playerIdx || p.isDead) return;
+            if (i === 0 || p.isDead) return;
             const dist = getDist(p.pos, player.pos);
             if (dist < closestDist) closestDist = dist;
         });
@@ -229,13 +230,13 @@ class Game {
 
     addPlayer(pos: Pos): void {
         this.players.push(new Player(pos));
-        this.grid.cellAt(pos).markTrail(this.players.length - 1, null);
+        this.grid.cellAt(pos).markTrail(this.players.length - 1, this.players);
     }
 
     stepPlayer(playerIdx: number, pos: Pos): void {
         const player = this.players[playerIdx];
         player.step(pos);
-        this.grid.cellAt(pos).markTrail(playerIdx, player.dir);
+        this.grid.cellAt(pos).markTrail(playerIdx, this.players);
     }
 
     step(input: Input): void {
@@ -261,11 +262,11 @@ class Game {
         const player = this.players[playerIdx];
         if (!player.tryStepNext()) return false;
         const cell = this.grid.tryCellAt(player.pos);
-        if (!cell || !cell.isEmpty()) {
+        if (!cell || !cell.isEmpty(this.players)) {
             player.stepBack();
             return false;
         }
-        cell.markTrail(playerIdx, player.dir);
+        cell.markTrail(playerIdx, this.players);
         return true;
     }
 
@@ -277,6 +278,59 @@ class Game {
     }
 }
 
+type Result = {dir: Dir; depth: number; isDead: boolean[]};
+function scoreResults(
+    results: Result[],
+    playerCount: number,
+): {[dir in Dir]: number} {
+    let filteredResults = results;
+    for (let playerIdx = 0; playerIdx < playerCount; playerIdx++) {
+        const next = filteredResults.filter(({isDead}) => !isDead[playerIdx]);
+        filteredResults = next.length ? next : filteredResults;
+    }
+
+    type ResultWithWeight = {dir: Dir; weight: number};
+    const withWeight = filteredResults.map(({dir, depth}) => ({
+        dir,
+        weight: 1 / (depth + 1),
+    }));
+    const withWeightByDir: {[dir in Dir]: ResultWithWeight[]} = {
+        LEFT: [],
+        RIGHT: [],
+        UP: [],
+        DOWN: [],
+    };
+    withWeight.forEach(result => withWeightByDir[result.dir].push(result));
+
+    const scoreByDir: {[dir in Dir]: number} = {
+        LEFT: 0,
+        RIGHT: 0,
+        UP: 0,
+        DOWN: 0,
+    };
+
+    const weightSum = withWeight.reduce((a, b) => a + b.weight, 0);
+    dirs.forEach(dir => {
+        const results = withWeightByDir[dir];
+        if (results.length === 0) return;
+        scoreByDir[dir] = results.reduce((a, b) => a + b.weight / weightSum, 0);
+    });
+    return scoreByDir;
+}
+
+function getMax<K extends string>(scores: {[name in K]: number}): K | null {
+    let result: keyof typeof scores | null = null;
+    let maxScore = -Infinity;
+    for (const key in scores) {
+        if (scores[key] > maxScore) {
+            maxScore = scores[key];
+            result = key;
+        }
+    }
+    // console.error('getMax\n', scores);
+    return result;
+}
+
 class Iterator {
     constructor(readonly game: Game) {
         this.startTurn(250);
@@ -284,37 +338,70 @@ class Iterator {
 
     private timeLimit = Number.MAX_SAFE_INTEGER;
     private startTs = Date.now();
+    private outOfTime = false;
+
+    private turns = 0;
+    private maxDepth = 0;
+    private depth = 0;
+    public iteration = 0;
+    private dir: Dir | null = null;
+    private results: Result[] = [];
 
     startTurn(timeLimit: number): void {
         this.timeLimit = timeLimit;
         this.startTs = Date.now();
+        this.outOfTime = false;
+        this.depth = 0;
+        this.dir = null;
+        this.results = [];
+        this.maxDepth = 0;
+        this.iteration = 0;
+        this.turns++;
     }
+
     hasTimeLeft(): boolean {
-        const ms = Date.now() - this.startTs;
-        // console.log(ms);
-        return ms < this.timeLimit;
+        let ms;
+        // console.error(ms);
+        if (
+            !this.outOfTime &&
+            (ms = Date.now() - this.startTs) > this.timeLimit
+        ) {
+            this.outOfTime = true;
+            console.error(
+                `Out of time at ${this.depth}/${this.maxDepth}, iter# ${this.iteration}: ${ms}ms`,
+            );
+        }
+        return !this.outOfTime;
         // log('Turn %d: %dms', turn, endHr[1] / 1000000);
     }
 
-    iteratePlayer([playerIdx, ...restPlayers]: number[], cb: () => void): void {
-        if (playerIdx == null) {
-            cb();
+    iteratePlayer(playerIdx = 0): void {
+        this.iteration++;
+        if (playerIdx >= this.game.players.length) {
+            this.iterateTurn();
             return;
         }
         const player = this.game.players[playerIdx];
         if (player.isDead) {
-            this.iteratePlayer(restPlayers, cb);
+            this.iteratePlayer(playerIdx + 1);
             return;
         }
 
         let madeATurn = false;
         if (this.game.tryStepNext(playerIdx)) {
             madeATurn = true;
-            this.iteratePlayer(restPlayers, cb);
+            this.iteratePlayer(playerIdx + 1);
             this.game.stepBack(playerIdx);
         }
 
-        if (madeATurn && this.game.distToClosestPlayerFor(playerIdx) >= 10) {
+        if (
+            madeATurn &&
+            // continue if...
+            !(
+                this.depth < 0 ||
+                (this.depth < 10 && this.game.distToClosestPlayer() < 3)
+            )
+        ) {
             return;
         }
 
@@ -325,71 +412,48 @@ class Iterator {
                 return;
             }
             madeATurn = true;
-            this.iteratePlayer(restPlayers, cb);
+            this.iteratePlayer(playerIdx + 1);
             this.game.stepBack(playerIdx);
             player.dir = prevDir;
         });
         if (madeATurn) return;
 
         player.isDead = true;
-        this.iteratePlayer(restPlayers, cb);
+        this.iteratePlayer(playerIdx + 1);
         player.isDead = false;
     }
 
-    forEachPossibleTurn(cb: () => void): void {
-        const players: number[] = [];
-        this.game.players.forEach((_, playerIdx) => players.push(playerIdx));
-        this.iteratePlayer(players, cb);
+    iterateTurn(): void {
+        if (this.game.players[0].isDead) {
+            this.addResult();
+            return;
+        }
+        if (this.depth === 0) {
+            this.dir = this.game.players[0].dir;
+        }
+        if (!this.hasTimeLeft() || this.game.hasEnded()) {
+            this.addResult();
+        } else {
+            this.depth++;
+            this.iteratePlayer();
+            this.depth--;
+        }
     }
 
-    iterate(
-        cb: (dir: Dir | null, depth: number) => void,
-        depth = 0,
-        dir: Dir | null = null,
-    ): void {
-        this.forEachPossibleTurn(() => {
-            if (this.game.players[0].isDead) {
-                cb(dir, depth);
-                return;
-            }
-            if (depth === 0) {
-                dir = this.game.players[0].dir;
-            }
-            if (
-                depth >= 4 ||
-                !this.hasTimeLeft() ||
-                this.game.players.filter(player => !player.isDead).length <= 1
-            ) {
-                cb(dir, depth);
-            } else {
-                this.iterate(cb, depth + 1, dir);
-            }
+    addResult(): void {
+        if (!this.dir) return;
+        if (this.maxDepth < this.depth) this.maxDepth = this.depth;
+        this.results.push({
+            dir: this.dir,
+            depth: this.depth,
+            isDead: this.game.players.map(p => p.isDead),
         });
     }
-
     findBestDir(): Dir | null {
-        const scores: {[dir in Dir]: number[]} = {
-            LEFT: [],
-            RIGHT: [],
-            UP: [],
-            DOWN: [],
-        };
-        this.iterate((dir, depth) => {
-            if (dir) scores[dir].push(this.game.getScore(0, depth));
-        });
+        this.iteratePlayer();
 
-        let bestDir = null;
-        let minScore = Infinity;
-        dirs.forEach(dir => {
-            const score =
-                scores[dir].reduce((a, b) => a + b, 0) / scores[dir].length;
-            if (isNaN(score)) return;
-            if (score < minScore) {
-                minScore = score;
-                bestDir = dir;
-            }
-        });
-        return bestDir;
+        // console.error(results);
+        return getMax(scoreResults(this.results, this.game.players.length));
     }
 }
 
@@ -402,16 +466,20 @@ function go(
     writeline: (s: string) => void,
 ): void {
     for (let turn = 0; ; turn++) {
-        game.iterator.startTurn(150);
-        const input = readState(readline);
-        if (input == null) break;
-
         const startHr = process.hrtime();
         const showTime = (): void => {
             const endHr = process.hrtime(startHr);
-            log('Turn %d: %dms', turn, endHr[1] / 1000000);
+            log(
+                'Turn %d: %dms, %dkIter/ms',
+                turn,
+                endHr[1] / 1000000,
+                Math.round(game.iterator.iteration / (endHr[1] / 1000000)),
+            );
         };
+        const input = readState(readline);
+        if (input == null) break;
 
+        game.iterator.startTurn(95);
         game.step(input);
 
         // log(myPos, otherPos);
@@ -425,8 +493,9 @@ function go(
     }
 }
 
-export {Game, go};
+export {Game, scoreResults, go};
 if (process.env.NODE_ENV !== 'test') {
-    shuffle(dirs);
+    // shuffle(dirs);
+    // console.error(dirs);
     go(new Game(), readline, log, console.log.bind(console));
 }
