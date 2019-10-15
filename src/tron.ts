@@ -102,34 +102,38 @@ class Player {
     constructor(pos: Pos) {
         this.pos = pos;
     }
+    private _assertAlive(): void {
+        if (this.isDead) throw new Error('Player is dead');
+    }
+    private _dirUnsetErr(): Error {
+        return new Error('Player direction is unset');
+    }
     step(pos: Pos): void {
+        this._assertAlive();
         this.dir = deriveDir(this.pos, pos);
         this.pos = pos;
     }
     tryStepNext(): boolean {
-        if (!this.dir || this.isDead) return false;
+        this._assertAlive();
+        if (!this.dir) throw this._dirUnsetErr();
         this.pos = shift[this.dir](this.pos);
         return true;
     }
     stepBack(): void {
-        if (!this.dir) return;
+        this._assertAlive();
+        if (!this.dir) throw this._dirUnsetErr();
         this.pos = shift[opposite[this.dir]](this.pos);
     }
-    swapDir(newDir: Dir): Dir | null {
-        const prevDir = this.dir;
-        this.dir = newDir;
-        return prevDir;
-    }
     getAvailableDirs(): Dir[] {
+        this._assertAlive();
         if (this.dir == null) return dirs;
-        if (this.isDead) return [];
         return sides[this.dir];
     }
 }
 
 class Cell {
-    private trailOf = -1;
-    private dir: null | Dir = null;
+    trailOf = -1;
+    dir: null | Dir = null;
     private deadTrails: {dir: Dir | null; trailOf: number}[] = [];
 
     toString(): string {
@@ -258,12 +262,15 @@ class Game {
         }
     }
 
-    tryStepNext(playerIdx: number): boolean {
+    tryStepNext(playerIdx: number, dir?: Dir): boolean {
         const player = this.players[playerIdx];
+        const prevDir = player.dir;
+        if (dir) player.dir = dir;
         if (!player.tryStepNext()) return false;
         const cell = this.grid.tryCellAt(player.pos);
         if (!cell || !cell.isEmpty(this.players)) {
             player.stepBack();
+            player.dir = prevDir;
             return false;
         }
         cell.markTrail(playerIdx, this.players);
@@ -275,6 +282,7 @@ class Game {
         const cell = this.grid.cellAt(player.pos);
         cell.unmarkTrail();
         player.stepBack();
+        player.dir = this.grid.cellAt(player.pos).dir;
     }
 }
 
@@ -388,7 +396,10 @@ class Iterator {
         }
 
         let madeATurn = false;
-        if (this.game.tryStepNext(playerIdx)) {
+        if (
+            this.game.players[playerIdx].dir &&
+            this.game.tryStepNext(playerIdx)
+        ) {
             madeATurn = true;
             this.iteratePlayer(playerIdx + 1);
             this.game.stepBack(playerIdx);
@@ -397,24 +408,18 @@ class Iterator {
         if (
             madeATurn &&
             // continue if...
-            !(
-                this.depth < 0 ||
-                (this.depth < 10 && this.game.distToClosestPlayer() < 3)
-            )
+            !(this.depth < 10 && this.game.distToClosestPlayer() < 3)
         ) {
             return;
         }
 
         player.getAvailableDirs().forEach(dir => {
-            const prevDir = player.swapDir(dir);
-            if (!this.game.tryStepNext(playerIdx)) {
-                player.dir = prevDir;
+            if (!this.game.tryStepNext(playerIdx, dir)) {
                 return;
             }
             madeATurn = true;
             this.iteratePlayer(playerIdx + 1);
             this.game.stepBack(playerIdx);
-            player.dir = prevDir;
         });
         if (madeATurn) return;
 
