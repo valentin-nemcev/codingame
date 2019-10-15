@@ -890,18 +890,18 @@ exports[`Iterate forEachPossibleTurn 36`] = `
 
 exports[`Score outcomes 2 players 1`] = `
 Object {
-  "DOWN": 0.10403536067770457,
-  "LEFT": 0.2947933756914158,
-  "RIGHT": 0.14236417776949045,
-  "UP": 0.45880708586138935,
+  "SOUTH": 0.10403536067770457,
+  "EAST": 0.2947933756914158,
+  "WEST": 0.14236417776949045,
+  "NORTH": 0.45880708586138935,
 }
 `;
 
 exports[`Score outcomes 2 players 2`] = `
 Object {
-  "DOWN": 1,
-  "LEFT": 0,
-  "RIGHT": 0,
-  "UP": 0,
+  "SOUTH": 1,
+  "EAST": 0,
+  "WEST": 0,
+  "NORTH": 0,
 }
 `;

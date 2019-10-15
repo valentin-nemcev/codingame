@@ -28,46 +28,46 @@ function getDist(a: Pos, b: Pos): number {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-type Dir = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
-const dirs: Dir[] = ['LEFT', 'RIGHT', 'UP', 'DOWN'];
+type Dir = 'EAST' | 'WEST' | 'NORTH' | 'SOUTH';
+const dirs: Dir[] = ['EAST', 'WEST', 'NORTH', 'SOUTH'];
 const shift: {[dir in Dir]: (p: Pos) => Pos} = {
-    LEFT: ({x, y}) => ({x: x - 1, y}),
-    RIGHT: ({x, y}) => ({x: x + 1, y}),
-    UP: ({x, y}) => ({x, y: y - 1}),
-    DOWN: ({x, y}) => ({x, y: y + 1}),
+    EAST: ({x, y}) => ({x: x - 1, y}),
+    WEST: ({x, y}) => ({x: x + 1, y}),
+    NORTH: ({x, y}) => ({x, y: y - 1}),
+    SOUTH: ({x, y}) => ({x, y: y + 1}),
 };
 
 const deriveDir = (prev: Pos, next: Pos): Dir => {
     const xDiff = next.x - prev.x;
     const yDiff = next.y - prev.y;
-    if (xDiff === -1 && yDiff === 0) return 'LEFT';
-    if (xDiff === 1 && yDiff === 0) return 'RIGHT';
-    if (xDiff === 0 && yDiff === -1) return 'UP';
-    if (xDiff === 0 && yDiff === 1) return 'DOWN';
+    if (xDiff === -1 && yDiff === 0) return 'EAST';
+    if (xDiff === 1 && yDiff === 0) return 'WEST';
+    if (xDiff === 0 && yDiff === -1) return 'NORTH';
+    if (xDiff === 0 && yDiff === 1) return 'SOUTH';
     throw new Error(
         `No single step from ${posToString(prev)} to ${posToString(next)}`,
     );
 };
 
 const opposite: {readonly [dir in Dir]: Dir} = {
-    LEFT: 'RIGHT',
-    RIGHT: 'LEFT',
-    UP: 'DOWN',
-    DOWN: 'UP',
+    EAST: 'WEST',
+    WEST: 'EAST',
+    NORTH: 'SOUTH',
+    SOUTH: 'NORTH',
 };
 
 const sides: {readonly [dir in Dir]: [Dir, Dir]} = {
-    LEFT: ['UP', 'DOWN'],
-    RIGHT: ['UP', 'DOWN'],
-    UP: ['LEFT', 'RIGHT'],
-    DOWN: ['LEFT', 'RIGHT'],
+    EAST: ['NORTH', 'SOUTH'],
+    WEST: ['NORTH', 'SOUTH'],
+    NORTH: ['EAST', 'WEST'],
+    SOUTH: ['EAST', 'WEST'],
 };
 
 const dirToString: {readonly [dir in Dir]: string} = {
-    LEFT: '<',
-    RIGHT: '>',
-    UP: '↑',
-    DOWN: '↓',
+    EAST: '<',
+    WEST: '>',
+    NORTH: '↑',
+    SOUTH: '↓',
 };
 
 // const lines: string[] = [];
@@ -303,18 +303,18 @@ function scoreResults(
         weight: 1 / (depth + 1),
     }));
     const withWeightByDir: {[dir in Dir]: ResultWithWeight[]} = {
-        LEFT: [],
-        RIGHT: [],
-        UP: [],
-        DOWN: [],
+        EAST: [],
+        WEST: [],
+        NORTH: [],
+        SOUTH: [],
     };
     withWeight.forEach(result => withWeightByDir[result.dir].push(result));
 
     const scoreByDir: {[dir in Dir]: number} = {
-        LEFT: 0,
-        RIGHT: 0,
-        UP: 0,
-        DOWN: 0,
+        EAST: 0,
+        WEST: 0,
+        NORTH: 0,
+        SOUTH: 0,
     };
 
     const weightSum = withWeight.reduce((a, b) => a + b.weight, 0);
