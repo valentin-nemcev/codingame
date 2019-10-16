@@ -381,8 +381,11 @@ function getMax<K extends string>(scores: {[name in K]: number}): K | null {
             result = key;
         }
     }
-    // console.error('getMax\n', scores);
     return result;
+}
+
+function now(): number {
+    return process.hrtime()[1] / 1000000;
 }
 
 class Iterator {
@@ -393,7 +396,7 @@ class Iterator {
     }
 
     private timeLimit = Number.MAX_SAFE_INTEGER;
-    private startTs = Date.now();
+    private startTs = now();
     private outOfTime = false;
 
     private turns = 0;
@@ -405,7 +408,7 @@ class Iterator {
 
     startTurn(timeLimit: number): void {
         this.timeLimit = timeLimit;
-        this.startTs = Date.now();
+        this.startTs = now();
         this.outOfTime = false;
         this.depth = 0;
         this.dir = null;
@@ -416,15 +419,15 @@ class Iterator {
     }
 
     getTimeSpent(): number {
-        return Date.now() - this.startTs;
+        return now() - this.startTs;
     }
 
     printTurnStats(): void {
         const ms = this.getTimeSpent();
         this.log(
-            'Turn %d: %dms, %dkIter/ms',
+            'Turn %d: %s ms, %d i/ms',
             this.turns,
-            ms,
+            ms.toPrecision(3),
             Math.round(this.iteration / ms),
         );
     }
@@ -434,7 +437,9 @@ class Iterator {
         if (!this.outOfTime && (ms = this.getTimeSpent()) > this.timeLimit) {
             this.outOfTime = true;
             this.log(
-                `Out of time at ${this.depth}/${this.maxDepth}, iter# ${this.iteration}: ${ms}ms`,
+                `Out of time at ${this.depth}/${this.maxDepth}, iter# ${
+                    this.iteration
+                }: ${ms.toPrecision(3)}ms`,
             );
         }
         return !this.outOfTime;
@@ -551,7 +556,6 @@ function go(
 
         const dir = game.iterator.findBestDir();
 
-        // log(game.dump());
         writeline(dir || 'AAAAA!');
     }
 }
