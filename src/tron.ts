@@ -20,6 +20,10 @@ interface Pos {
     y: number;
 }
 
+function isPosUnset({x, y}: Pos): boolean {
+    return x == -1 && y == -1;
+}
+
 function posToString({x, y}: Pos): string {
     return `${x}, ${y}`;
 }
@@ -243,6 +247,7 @@ class Game {
     }
 
     stepPlayer(playerIdx: number, pos: Pos): void {
+        if (isPosUnset(pos)) return;
         const player = this.players[playerIdx];
         player.stepToPos(pos);
         this.grid.cellAt(pos).markTrail(playerIdx, this.players);
@@ -471,7 +476,7 @@ class Iterator {
 
             const nearEnemy =
                 this.depth < 10 && this.game.distToClosestPlayer() < 3;
-            const checkCorners = nearEnemy || !madeAStep;
+            const checkCorners = !nearEnemy && madeAStep;
 
             player.getSideDirs().forEach(dir => {
                 if (!this.game.tryStepToSide(playerIdx, dir, {checkCorners})) {
