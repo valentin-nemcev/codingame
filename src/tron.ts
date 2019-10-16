@@ -102,29 +102,31 @@ class Player {
     constructor(pos: Pos) {
         this.pos = pos;
     }
+    isFirstTurn(): boolean {
+        return this.dir == null;
+    }
     private _assertAlive(): void {
         if (this.isDead) throw new Error('Player is dead');
     }
     private _dirUnsetErr(): Error {
         return new Error('Player direction is unset');
     }
-    step(pos: Pos): void {
+    stepToPos(pos: Pos): void {
         this._assertAlive();
         this.dir = deriveDir(this.pos, pos);
         this.pos = pos;
     }
-    tryStepNext(): boolean {
+    step(): void {
         this._assertAlive();
         if (!this.dir) throw this._dirUnsetErr();
         this.pos = shift[this.dir](this.pos);
-        return true;
     }
     stepBack(): void {
         this._assertAlive();
         if (!this.dir) throw this._dirUnsetErr();
         this.pos = shift[opposite[this.dir]](this.pos);
     }
-    getAvailableDirs(): Dir[] {
+    getSideDirs(): Dir[] {
         this._assertAlive();
         if (this.dir == null) return dirs;
         return sides[this.dir];
@@ -191,9 +193,12 @@ class Grid {
         return this.grid[pos.y * gridWidth + pos.x];
     }
 
-    tryCellAt(pos: Pos): Cell | null {
-        if (this.isPosOnGrid(pos)) return this.grid[pos.y * gridWidth + pos.x];
-        else return null;
+    getEmptyCellAt(pos: Pos, players: Player[]): Cell | null {
+        if (!this.isPosOnGrid(pos)) return null;
+        const cell = this.grid[pos.y * gridWidth + pos.x];
+        if (!cell.isEmpty(players)) return null;
+
+        return cell;
     }
 
     dump(): string {
@@ -239,11 +244,11 @@ class Game {
 
     stepPlayer(playerIdx: number, pos: Pos): void {
         const player = this.players[playerIdx];
-        player.step(pos);
+        player.stepToPos(pos);
         this.grid.cellAt(pos).markTrail(playerIdx, this.players);
     }
 
-    step(input: Input): void {
+    stepFromInput(input: Input): void {
         const {myIdx, posList, startPosList} = input;
         if (this.players.length === 0) {
             startPosList.forEach((_, playerIdx) => {
@@ -262,19 +267,55 @@ class Game {
         }
     }
 
-    tryStepNext(playerIdx: number, dir?: Dir): boolean {
+    tryStepForward(playerIdx: number): boolean {
         const player = this.players[playerIdx];
-        const prevDir = player.dir;
-        if (dir) player.dir = dir;
-        if (!player.tryStepNext()) return false;
-        const cell = this.grid.tryCellAt(player.pos);
-        if (!cell || !cell.isEmpty(this.players)) {
+
+        player.step();
+
+        const cell = this.grid.getEmptyCellAt(player.pos, this.players);
+        if (!cell) {
             player.stepBack();
-            player.dir = prevDir;
             return false;
         }
         cell.markTrail(playerIdx, this.players);
         return true;
+    }
+
+    tryStepToSide(
+        playerIdx: number,
+        dir: Dir,
+        {checkCorners = false}: {checkCorners?: boolean},
+    ): boolean {
+        const player = this.players[playerIdx];
+
+        const prevDir = player.dir;
+        player.dir = dir;
+        player.step();
+
+        const cell = this.grid.getEmptyCellAt(player.pos, this.players);
+        if (
+            !cell ||
+            (checkCorners && !this._checkSideCorners(player.pos, dir))
+        ) {
+            player.stepBack();
+            player.dir = prevDir;
+            return false;
+        }
+
+        cell.markTrail(playerIdx, this.players);
+        return true;
+    }
+
+    protected _checkSideCorners(pos: Pos, dir: Dir): boolean {
+        for (const d of sides[dir]) {
+            const cornerPos = shift[d](pos);
+            const emptyCorner = this.grid.getEmptyCellAt(
+                cornerPos,
+                this.players,
+            );
+            if (!emptyCorner) return true;
+        }
+        return false;
     }
 
     stepBack(playerIdx: number): void {
@@ -395,33 +436,43 @@ class Iterator {
             return;
         }
 
-        let madeATurn = false;
-        if (
-            this.game.players[playerIdx].dir &&
-            this.game.tryStepNext(playerIdx)
-        ) {
-            madeATurn = true;
-            this.iteratePlayer(playerIdx + 1);
-            this.game.stepBack(playerIdx);
-        }
+        let madeAStep = false;
 
-        if (
-            madeATurn &&
-            // continue if...
-            !(this.depth < 10 && this.game.distToClosestPlayer() < 3)
-        ) {
-            return;
-        }
-
-        player.getAvailableDirs().forEach(dir => {
-            if (!this.game.tryStepNext(playerIdx, dir)) {
-                return;
+        if (player.isFirstTurn()) {
+            dirs.forEach(dir => {
+                if (
+                    !this.game.tryStepToSide(playerIdx, dir, {
+                        checkCorners: false,
+                    })
+                ) {
+                    return;
+                }
+                madeAStep = true;
+                this.iteratePlayer(playerIdx + 1);
+                this.game.stepBack(playerIdx);
+            });
+        } else {
+            if (this.game.tryStepForward(playerIdx)) {
+                madeAStep = true;
+                this.iteratePlayer(playerIdx + 1);
+                this.game.stepBack(playerIdx);
             }
-            madeATurn = true;
-            this.iteratePlayer(playerIdx + 1);
-            this.game.stepBack(playerIdx);
-        });
-        if (madeATurn) return;
+
+            const nearEnemy =
+                this.depth < 10 && this.game.distToClosestPlayer() < 3;
+            const checkCorners = nearEnemy || !madeAStep;
+
+            player.getSideDirs().forEach(dir => {
+                if (!this.game.tryStepToSide(playerIdx, dir, {checkCorners})) {
+                    return;
+                }
+                madeAStep = true;
+                this.iteratePlayer(playerIdx + 1);
+                this.game.stepBack(playerIdx);
+            });
+        }
+
+        if (madeAStep) return;
 
         player.isDead = true;
         this.iteratePlayer(playerIdx + 1);
@@ -485,7 +536,7 @@ function go(
         if (input == null) break;
 
         game.iterator.startTurn(95);
-        game.step(input);
+        game.stepFromInput(input);
 
         // log(myPos, otherPos);
 
