@@ -217,9 +217,9 @@ class Game {
     public readonly iterator: Iterator;
     players: Player[] = [];
 
-    constructor() {
+    constructor(log: Log) {
         this.grid = new Grid();
-        this.iterator = new Iterator(this); //eslint-disable-line @typescript-eslint/no-use-before-define
+        this.iterator = new Iterator(this, log); //eslint-disable-line @typescript-eslint/no-use-before-define
     }
 
     hasEnded(): boolean {
@@ -381,7 +381,9 @@ function getMax<K extends string>(scores: {[name in K]: number}): K | null {
 }
 
 class Iterator {
-    constructor(readonly game: Game) {
+    private log: Log;
+    constructor(readonly game: Game, log: Log) {
+        this.log = log;
         this.startTurn(250);
     }
 
@@ -408,20 +410,29 @@ class Iterator {
         this.turns++;
     }
 
+    getTimeSpent(): number {
+        return Date.now() - this.startTs;
+    }
+
+    printTurnStats(): void {
+        const ms = this.getTimeSpent();
+        this.log(
+            'Turn %d: %dms, %dkIter/ms',
+            this.turns,
+            ms,
+            Math.round(this.iteration / ms),
+        );
+    }
+
     hasTimeLeft(): boolean {
         let ms;
-        // console.error(ms);
-        if (
-            !this.outOfTime &&
-            (ms = Date.now() - this.startTs) > this.timeLimit
-        ) {
+        if (!this.outOfTime && (ms = this.getTimeSpent()) > this.timeLimit) {
             this.outOfTime = true;
-            console.error(
+            this.log(
                 `Out of time at ${this.depth}/${this.maxDepth}, iter# ${this.iteration}: ${ms}ms`,
             );
         }
         return !this.outOfTime;
-        // log('Turn %d: %dms', turn, endHr[1] / 1000000);
     }
 
     iteratePlayer(playerIdx = 0): void {
@@ -508,50 +519,39 @@ class Iterator {
     findBestDir(): Dir | null {
         this.iteratePlayer();
 
-        // console.error(results);
-        return getMax(scoreResults(this.results, this.game.players.length));
+        const dir = getMax(
+            scoreResults(this.results, this.game.players.length),
+        );
+        this.printTurnStats();
+        return dir;
     }
 }
 
 const log = console.error.bind(console);
 type Log = typeof log;
+
+const turnTimeLimit = 95;
+
 function go(
     game: Game,
     readline: () => string,
-    log: Log,
     writeline: (s: string) => void,
 ): void {
     for (let turn = 0; ; turn++) {
-        const startHr = process.hrtime();
-        const showTime = (): void => {
-            const endHr = process.hrtime(startHr);
-            log(
-                'Turn %d: %dms, %dkIter/ms',
-                turn,
-                endHr[1] / 1000000,
-                Math.round(game.iterator.iteration / (endHr[1] / 1000000)),
-            );
-        };
         const input = readState(readline);
         if (input == null) break;
 
-        game.iterator.startTurn(95);
+        game.iterator.startTurn(turnTimeLimit);
         game.stepFromInput(input);
-
-        // log(myPos, otherPos);
 
         const dir = game.iterator.findBestDir();
 
         // log(game.dump());
         writeline(dir || 'AAAAA!');
-        showTime();
-        // console.error(lines.join('\n'));
     }
 }
 
 export {Game, scoreResults, go};
 if (process.env.NODE_ENV !== 'test') {
-    // shuffle(dirs);
-    // console.error(dirs);
-    go(new Game(), readline, log, console.log.bind(console));
+    go(new Game(log), readline, console.log.bind(console));
 }
