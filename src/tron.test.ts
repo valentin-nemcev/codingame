@@ -1,13 +1,28 @@
-import {Game, scoreResults, go} from './tron';
+import {readState, Game, scoreResults, go} from './tron';
 import sampleInput from './sample_input';
 
-describe('Input', () => {
+describe.skip('Input', () => {
     it('works', () => {
         const game = new Game();
         const readline = (): string => sampleInput.shift() || '';
-        go(game, readline, () => {}, () => {});
-        console.log(game.grid.dump());
-        expect(game.grid.dump()).toMatchSnapshot();
+        go(game, readline, () => {});
+        console.log(game.toString());
+        expect(game.toString()).toMatchSnapshot();
+    });
+});
+
+describe('Game', () => {
+    test('Read input', () => {
+        let line = 0;
+        const readline = (): string => sampleInput[line++] || '';
+        const game = new Game();
+        while (line < sampleInput.length) {
+            const input = readState(readline);
+            if (!input) break;
+            game.stepFromInput(input);
+        }
+        console.log(game.toString());
+        expect(game.toString()).toMatchSnapshot();
     });
 });
 
@@ -47,49 +62,5 @@ describe('Score outcomes', () => {
                 2,
             ),
         ).toMatchSnapshot();
-    });
-});
-
-describe('Iterate', () => {
-    test.skip('forEachPossibleTurn', () => {
-        const game = new Game();
-        game.addPlayer({x: 1, y: 10});
-        game.addPlayer({x: 12, y: 17});
-        game.addPlayer({x: 3, y: 5});
-        game.stepPlayer(0, {x: 2, y: 10});
-        game.stepPlayer(1, {x: 12, y: 18});
-        const before = game.grid.dump();
-        // game.iterator.forEachPossibleTurn(() =>
-        //     expect(game.grid.dump()).toMatchSnapshot(),
-        // );
-        const after = game.grid.dump();
-        expect(after).toEqual(before);
-    });
-
-    test('iterate lost', () => {
-        const game = new Game();
-        game.addPlayer({x: 1, y: 1});
-        game.addPlayer({x: 0, y: 0});
-        game.stepPlayer(0, {x: 2, y: 1});
-        game.stepPlayer(1, {x: 1, y: 0});
-        game.stepPlayer(0, {x: 2, y: 0});
-        console.log(game.iterator.findBestDir());
-    });
-
-    test('iterate 1', () => {
-        const game = new Game();
-        game.addPlayer({x: 0, y: 0});
-        game.addPlayer({x: 12, y: 17});
-        game.addPlayer({x: 3, y: 5});
-        console.log(game.iterator.findBestDir());
-    });
-
-    test('iterate 2', () => {
-        const game = new Game();
-        game.addPlayer({x: 0, y: 0});
-        game.addPlayer({x: 12, y: 17});
-        game.stepPlayer(0, {x: 1, y: 0});
-        // game.stepPlayer(2, {x: 3, y: 5});
-        console.log(game.iterator.findBestDir());
     });
 });

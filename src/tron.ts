@@ -15,6 +15,40 @@ declare const readline: () => string;
 //     return a;
 // }
 
+const TRAIL_CHARS: {[key: string]: string} = {
+    UNKNOWN: '? ',
+
+    EMPTY: '⋅ ',
+
+    LEFTEND: '◄━◄═◄─',
+    RIGHTEND: '► ',
+    UPEND: '▲ ',
+    DOWNEND: '▼ ',
+
+    STARTLEFT: '0 1 2 ',
+    STARTRIGHT: '0━1═2─',
+    STARTUP: '0 1 2',
+    STARTDOWN: '0 1 2',
+
+    LEFTLEFT: '━━══──',
+    RIGHTRIGHT: '━━══──',
+
+    LEFTUP: '┗━╚═└─',
+    DOWNRIGHT: '┗━╚═└─',
+
+    LEFTDOWN: '┏━╔═┌─',
+    UPRIGHT: '┏━╔═┌─',
+
+    RIGHTUP: '┛ ╝ ┘',
+    DOWNLEFT: '┛ ╝ ┘',
+
+    RIGHTDOWN: '┓ ╗ ┐',
+    UPLEFT: '┓ ╗ ┐',
+
+    UPUP: '┃ ║ │ ',
+    DOWNDOWN: '┃ ║ │ ',
+};
+
 interface Pos {
     x: number;
     y: number;
@@ -100,11 +134,12 @@ const gridWidth = 30;
 const gridHeight = 20;
 
 class Player {
+    readonly startPos: Pos;
     pos: Pos;
     dir: Dir | null = null;
     isDead = false;
     constructor(pos: Pos) {
-        this.pos = pos;
+        this.pos = this.startPos = pos;
     }
     isFirstTurn(): boolean {
         return this.dir == null;
@@ -205,7 +240,7 @@ class Grid {
         return cell;
     }
 
-    dump(): string {
+    toString(): string {
         let result = '';
         for (let y = 0; y < gridHeight; y++) {
             let line = '';
@@ -221,7 +256,7 @@ class Game {
     public readonly iterator: Iterator;
     players: Player[] = [];
 
-    constructor(log: Log) {
+    constructor(log?: Log) {
         this.grid = new Grid();
         this.iterator = new Iterator(this, log); //eslint-disable-line @typescript-eslint/no-use-before-define
     }
@@ -330,6 +365,47 @@ class Game {
         player.stepBack();
         player.dir = this.grid.cellAt(player.pos).dir;
     }
+
+    toString(): string {
+        const canvas = Array(gridWidth * gridHeight).fill(TRAIL_CHARS.EMPTY);
+        const draw = (pos: Pos, c: string): void => {
+            canvas[pos.y * gridWidth + pos.x] = c;
+        };
+        const getTrail = (
+            playerIdx: number,
+            dir: Dir | null,
+            prevDir: Dir | null,
+            end: boolean,
+        ): string => {
+            const trail = (dir || 'START') + (end ? 'END' : prevDir);
+            const chars = TRAIL_CHARS[trail] || TRAIL_CHARS.UNKNOWN;
+            let i = playerIdx * 2;
+            i = i >= chars.length ? 0 : i;
+            return chars.slice(i, i + 2);
+        };
+        this.players.forEach((player, i) => {
+            let prevPos = player.pos;
+            let prevDir = this.grid.cellAt(prevPos).dir;
+            if (prevDir == null) return;
+            let pos: Pos | null;
+            let dir: Dir | null;
+            let end = true;
+            for (;;) {
+                pos = shift[opposite[prevDir]](prevPos);
+                dir = this.grid.cellAt(pos).dir;
+                draw(pos, getTrail(i, dir, prevDir, end));
+                if (!dir) break;
+                prevPos = pos;
+                prevDir = dir;
+                end = false;
+            }
+        });
+        return canvas.reduce(
+            (s, c, i) =>
+                s + ((i + 1) % gridWidth === 0 ? c.slice(0, -1) + '\n' : c),
+            '',
+        );
+    }
 }
 
 type Result = {dir: Dir; depth: number; isDead: boolean[]};
@@ -388,9 +464,13 @@ function now(): number {
     return process.hrtime()[1] / 1000000;
 }
 
+const log = console.error.bind(console);
+const logNoop = (): void => {};
+type Log = typeof log;
+
 class Iterator {
     private log: Log;
-    constructor(readonly game: Game, log: Log) {
+    constructor(readonly game: Game, log: Log = logNoop) {
         this.log = log;
         this.startTurn(250);
     }
@@ -537,9 +617,6 @@ class Iterator {
     }
 }
 
-const log = console.error.bind(console);
-type Log = typeof log;
-
 const turnTimeLimit = 95;
 
 function go(
@@ -560,7 +637,7 @@ function go(
     }
 }
 
-export {Game, scoreResults, go};
+export {readState, Game, scoreResults, go};
 if (process.env.NODE_ENV !== 'test') {
     go(new Game(log), readline, console.log.bind(console));
 }
