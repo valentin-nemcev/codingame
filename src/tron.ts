@@ -20,6 +20,8 @@ const TRAIL_CHARS: {[key: string]: string} = {
 
     EMPTY: '⋅ ',
 
+    STARTEND: '0 1 2 ',
+
     LEFTEND: '◄━◄═◄─',
     RIGHTEND: '► ',
     UPEND: '▲ ',
@@ -373,31 +375,29 @@ class Game {
         };
         const getTrail = (
             playerIdx: number,
-            dir: Dir | null,
-            prevDir: Dir | null,
-            end: boolean,
+            tailDir: Dir | null,
+            headDir: Dir | null,
         ): string => {
-            const trail = (dir || 'START') + (end ? 'END' : prevDir);
+            const trail = (tailDir || 'START') + (headDir || 'END');
             const chars = TRAIL_CHARS[trail] || TRAIL_CHARS.UNKNOWN;
             let i = playerIdx * 2;
             i = i >= chars.length ? 0 : i;
             return chars.slice(i, i + 2);
         };
         this.players.forEach((player, i) => {
-            let prevPos = player.pos;
-            let prevDir = this.grid.cellAt(prevPos).dir;
-            if (prevDir == null) return;
-            let pos: Pos | null;
-            let dir: Dir | null;
-            let end = true;
+            let headPos: Pos | null = null;
+            let headDir: Dir | null = null;
+            let tailPos = player.pos;
+            let tailDir = this.grid.cellAt(tailPos).dir;
             for (;;) {
-                pos = shift[opposite[prevDir]](prevPos);
-                dir = this.grid.cellAt(pos).dir;
-                draw(pos, getTrail(i, dir, prevDir, end));
-                if (!dir) break;
-                prevPos = pos;
-                prevDir = dir;
-                end = false;
+                if (headDir && headPos) {
+                    tailPos = shift[opposite[headDir]](headPos);
+                    tailDir = this.grid.cellAt(tailPos).dir;
+                }
+                draw(tailPos, getTrail(i, tailDir, headDir));
+                if (!tailDir) break;
+                headPos = tailPos;
+                headDir = tailDir;
             }
         });
         return canvas.reduce(
@@ -484,15 +484,15 @@ class Iterator {
     private depth = 0;
     public iteration = 0;
     private dir: Dir | null = null;
-    private results: Result[] = [];
+    private readonly results: Result[] = [];
 
-    startTurn(timeLimit: number): void {
+    startTurn(timeLimit = Infinity): void {
         this.timeLimit = timeLimit;
         this.startTs = now();
         this.outOfTime = false;
         this.depth = 0;
         this.dir = null;
-        this.results = [];
+        this.results.length = 0;
         this.maxDepth = 0;
         this.iteration = 0;
         this.turns++;
@@ -617,7 +617,7 @@ class Iterator {
     }
 }
 
-const turnTimeLimit = 95;
+const turnTimeLimit = 50;
 
 function go(
     game: Game,
@@ -638,6 +638,6 @@ function go(
 }
 
 export {readState, Game, scoreResults, go};
-if (process.env.NODE_ENV !== 'test') {
+if (require.main === module) {
     go(new Game(log), readline, console.log.bind(console));
 }

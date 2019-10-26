@@ -1,27 +1,50 @@
 import {readState, Game, scoreResults, go} from './tron';
 import sampleInput from './sample_input';
 
-describe.skip('Input', () => {
-    it('works', () => {
-        const game = new Game();
-        const readline = (): string => sampleInput.shift() || '';
-        go(game, readline, () => {});
-        console.log(game.toString());
-        expect(game.toString()).toMatchSnapshot();
-    });
-});
+function feedInput(game: Game, input: string[]): void {
+    let line = 0;
+    const readline = (): string => input[line++] || '';
+    while (line < input.length) {
+        const input = readState(readline);
+        if (!input) break;
+        game.stepFromInput(input);
+    }
+}
 
 describe('Game', () => {
-    test('Read input', () => {
-        let line = 0;
-        const readline = (): string => sampleInput[line++] || '';
+    test('Sample input', () => {
         const game = new Game();
-        while (line < sampleInput.length) {
-            const input = readState(readline);
-            if (!input) break;
-            game.stepFromInput(input);
-        }
-        console.log(game.toString());
+        feedInput(game, sampleInput);
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Start position when my index is 0', () => {
+        const game = new Game();
+        game.stepFromInput({
+            myIdx: 0,
+            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}],
+            posList: [{x: 29, y: 9}, {x: 10, y: 1}],
+        });
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Start position when my index is 1', () => {
+        const game = new Game();
+        game.stepFromInput({
+            myIdx: 1,
+            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}],
+            posList: [{x: 29, y: 8}, {x: 10, y: 1}],
+        });
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Start position when my index is 2', () => {
+        const game = new Game();
+        game.stepFromInput({
+            myIdx: 2,
+            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}, {x: 16, y: 12}],
+            posList: [{x: 29, y: 8}, {x: 11, y: 1}, {x: 16, y: 12}],
+        });
         expect(game.toString()).toMatchSnapshot();
     });
 });
