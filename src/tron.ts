@@ -468,10 +468,50 @@ const log = console.error.bind(console);
 const logNoop = (): void => {};
 type Log = typeof log;
 
+class Results {
+    readonly scores: {[d in Dir]: {sum: number; count: number}} = {
+        LEFT: {sum: 0, count: 0},
+        RIGHT: {sum: 0, count: 0},
+        UP: {sum: 0, count: 0},
+        DOWN: {sum: 0, count: 0},
+    };
+
+    reset(): void {
+        for (const d in this.scores) {
+            this.scores[d as Dir].sum = 0;
+            this.scores[d as Dir].count = 0;
+        }
+    }
+
+    getDir(): Dir | null {
+        let result: Dir | null = null;
+        let maxScore = -Infinity;
+        for (const [key, {sum, count}] of Object.entries(this.scores)) {
+            const score = count / sum;
+            if (score > maxScore) {
+                maxScore = score;
+                result = key as Dir;
+            }
+        }
+        return result;
+    }
+
+    add({dir, depth, isDead: [meDead, ...othersDead]}: Result): void {
+        const s = this.scores[dir];
+        s.count++;
+        s.sum +=
+            2 ** (-1 * Math.log2(depth)) *
+            (-Number(meDead) +
+                othersDead.map(Number).reduce((a, b) => a + b, 0) /
+                    othersDead.length);
+    }
+}
+
 class Iterator {
     private log: Log;
     constructor(readonly game: Game, log: Log = logNoop) {
         this.log = log;
+        this.results = new Results();
         this.startTurn(250);
     }
 
@@ -480,11 +520,12 @@ class Iterator {
     private outOfTime = false;
 
     private turns = 0;
+    private resultCount = 0;
     private maxDepth = 0;
     private depth = 0;
     public iteration = 0;
     private dir: Dir | null = null;
-    private readonly results: Result[] = [];
+    private readonly results: Results;
 
     startTurn(timeLimit = Infinity): void {
         this.timeLimit = timeLimit;
@@ -492,7 +533,8 @@ class Iterator {
         this.outOfTime = false;
         this.depth = 0;
         this.dir = null;
-        this.results.length = 0;
+        this.results.reset();
+        this.resultCount = 0;
         this.maxDepth = 0;
         this.iteration = 0;
         this.turns++;
@@ -505,10 +547,14 @@ class Iterator {
     printTurnStats(): void {
         const ms = this.getTimeSpent();
         this.log(
-            'Turn %d: %s ms, %d i/ms',
+            'Turn %d: %s ms, %d i/ms, %d/%d depth, %d results, %d iterations',
             this.turns,
             ms.toPrecision(3),
             Math.round(this.iteration / ms),
+            this.depth,
+            this.maxDepth,
+            this.resultCount,
+            this.iteration,
         );
     }
 
@@ -600,7 +646,8 @@ class Iterator {
     addResult(): void {
         if (!this.dir) return;
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
-        this.results.push({
+        this.resultCount++;
+        this.results.add({
             dir: this.dir,
             depth: this.depth,
             isDead: this.game.players.map(p => p.isDead),
@@ -609,11 +656,11 @@ class Iterator {
     findBestDir(): Dir | null {
         this.iteratePlayer();
 
-        const dir = getMax(
-            scoreResults(this.results, this.game.players.length),
-        );
+        // const dir = getMax(
+        //     scoreResults(this.results, this.game.players.length),
+        // );
         this.printTurnStats();
-        return dir;
+        return this.results.getDir();
     }
 }
 
@@ -637,7 +684,7 @@ function go(
     }
 }
 
-export {readState, Game, scoreResults, go};
+export {readState, Game, Results, go};
 if (require.main === module) {
     go(new Game(log), readline, console.log.bind(console));
 }

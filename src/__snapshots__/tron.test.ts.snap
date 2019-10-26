@@ -98,18 +98,42 @@ exports[`Game Start position when my index is 2 1`] = `
 
 exports[`Score outcomes 2 players 1`] = `
 Object {
-  "DOWN": 0.10403536067770457,
-  "LEFT": 0.2947933756914158,
-  "RIGHT": 0.14236417776949045,
-  "UP": 0.45880708586138935,
+  "DOWN": Object {
+    "count": 3,
+    "sum": 0.003754541918258734,
+  },
+  "LEFT": Object {
+    "count": 5,
+    "sum": 0.014101223545272745,
+  },
+  "RIGHT": Object {
+    "count": 3,
+    "sum": -0.004040015390534821,
+  },
+  "UP": Object {
+    "count": 7,
+    "sum": 0.05705843825032954,
+  },
 }
 `;
 
-exports[`Score outcomes 2 players 2`] = `
+exports[`Score outcomes Some dirs 1`] = `
 Object {
-  "DOWN": 1,
-  "LEFT": 0,
-  "RIGHT": 0,
-  "UP": 0,
+  "DOWN": Object {
+    "count": 1,
+    "sum": 0.018518518518518524,
+  },
+  "LEFT": Object {
+    "count": 0,
+    "sum": 0,
+  },
+  "RIGHT": Object {
+    "count": 0,
+    "sum": 0,
+  },
+  "UP": Object {
+    "count": 1,
+    "sum": -0.1,
+  },
 }
 `;
