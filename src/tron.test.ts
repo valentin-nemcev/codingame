@@ -88,4 +88,29 @@ describe('Score outcomes', () => {
         ].forEach(result => results.add(result));
         expect(results.scores).toMatchSnapshot();
     });
+
+    test('All alive, zero depth', () => {
+        const results = new Results();
+        [
+            {dir: LEFT, depth: 87, isDead: [false, false]},
+            {dir: LEFT, depth: 206, isDead: [false, false]},
+            {dir: LEFT, depth: 87, isDead: [false, false]},
+            {dir: LEFT, depth: 192, isDead: [false, false]},
+            {dir: LEFT, depth: 37, isDead: [false, false]},
+            {dir: RIGHT, depth: 0, isDead: [false, false]},
+            {dir: RIGHT, depth: 0, isDead: [false, false]},
+            {dir: RIGHT, depth: 0, isDead: [false, false]},
+            {dir: UP, depth: 207, isDead: [false, false]},
+            {dir: UP, depth: 111, isDead: [false, false]},
+            {dir: UP, depth: 207, isDead: [false, false]},
+            {dir: UP, depth: 111, isDead: [false, false]},
+            {dir: UP, depth: 180, isDead: [false, false]},
+            {dir: UP, depth: 86, isDead: [false, false]},
+            {dir: UP, depth: 82, isDead: [false, false]},
+            {dir: DOWN, depth: 77, isDead: [false, false]},
+            {dir: DOWN, depth: 226, isDead: [false, false]},
+            {dir: DOWN, depth: 208, isDead: [false, false]},
+        ].forEach(result => results.add(result));
+        expect(results.scores).toMatchSnapshot();
+    });
 });

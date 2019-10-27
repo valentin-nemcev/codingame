@@ -100,19 +100,40 @@ exports[`Score outcomes 2 players 1`] = `
 Object {
   "DOWN": Object {
     "count": 3,
-    "sum": 0.003754541918258734,
+    "sum": 0.0036305374816851706,
   },
   "LEFT": Object {
     "count": 5,
-    "sum": 0.014101223545272745,
+    "sum": 0.01360078177106669,
   },
   "RIGHT": Object {
     "count": 3,
-    "sum": -0.004040015390534821,
+    "sum": -0.003732736095558034,
   },
   "UP": Object {
     "count": 7,
-    "sum": 0.05705843825032954,
+    "sum": 0.056539834995628084,
+  },
+}
+`;
+
+exports[`Score outcomes All alive, zero depth 1`] = `
+Object {
+  "DOWN": Object {
+    "count": 3,
+    "sum": 0,
+  },
+  "LEFT": Object {
+    "count": 5,
+    "sum": 0,
+  },
+  "RIGHT": Object {
+    "count": 3,
+    "sum": 0,
+  },
+  "UP": Object {
+    "count": 7,
+    "sum": 0,
   },
 }
 `;
@@ -121,7 +142,7 @@ exports[`Score outcomes Some dirs 1`] = `
 Object {
   "DOWN": Object {
     "count": 1,
-    "sum": 0.018518518518518524,
+    "sum": 0.018181818181818177,
   },
   "LEFT": Object {
     "count": 0,
@@ -133,7 +154,7 @@ Object {
   },
   "UP": Object {
     "count": 1,
-    "sum": -0.1,
+    "sum": -0.09090909090909091,
   },
 }
 `;

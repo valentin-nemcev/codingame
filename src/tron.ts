@@ -1,8 +1,8 @@
 declare const readline: () => string;
 
-// function last<T>(a: T[]): T | undefined {
-//     return a[a.length - 1]
-// }
+function last<T>(a: T[]): T | undefined {
+    return a[a.length - 1];
+}
 
 // function shuffle<T extends Array<unknown>>(a: T): T {
 //     let j, x, i;
@@ -409,60 +409,6 @@ class Game {
 }
 
 type Result = {dir: Dir; depth: number; isDead: boolean[]};
-function scoreResults(
-    results: Result[],
-    playerCount: number,
-): {[dir in Dir]: number} {
-    let filteredResults = results;
-    for (let playerIdx = 0; playerIdx < playerCount; playerIdx++) {
-        const next = filteredResults.filter(({isDead}) => !isDead[playerIdx]);
-        filteredResults = next.length ? next : filteredResults;
-    }
-
-    type ResultWithWeight = {dir: Dir; weight: number};
-    const withWeight = filteredResults.map(({dir, depth}) => ({
-        dir,
-        weight: 1 / (depth + 1),
-    }));
-    const withWeightByDir: {[dir in Dir]: ResultWithWeight[]} = {
-        LEFT: [],
-        RIGHT: [],
-        UP: [],
-        DOWN: [],
-    };
-    withWeight.forEach(result => withWeightByDir[result.dir].push(result));
-
-    const scoreByDir: {[dir in Dir]: number} = {
-        LEFT: 0,
-        RIGHT: 0,
-        UP: 0,
-        DOWN: 0,
-    };
-
-    const weightSum = withWeight.reduce((a, b) => a + b.weight, 0);
-    dirs.forEach(dir => {
-        const results = withWeightByDir[dir];
-        if (results.length === 0) return;
-        scoreByDir[dir] = results.reduce((a, b) => a + b.weight / weightSum, 0);
-    });
-    return scoreByDir;
-}
-
-function getMax<K extends string>(scores: {[name in K]: number}): K | null {
-    let result: keyof typeof scores | null = null;
-    let maxScore = -Infinity;
-    for (const key in scores) {
-        if (scores[key] > maxScore) {
-            maxScore = scores[key];
-            result = key;
-        }
-    }
-    return result;
-}
-
-function now(): number {
-    return process.hrtime()[1] / 1000000;
-}
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
@@ -500,36 +446,80 @@ class Results {
         const s = this.scores[dir];
         s.count++;
         s.sum +=
-            2 ** (-1 * Math.log2(depth)) *
+            2 ** (-1 * Math.log2(depth + 1)) *
             (-Number(meDead) +
                 othersDead.map(Number).reduce((a, b) => a + b, 0) /
                     othersDead.length);
     }
 }
 
+type Budget = {
+    iteration: number;
+    remaining: number;
+    total: number;
+};
+
 class Iterator {
     private log: Log;
     constructor(readonly game: Game, log: Log = logNoop) {
         this.log = log;
         this.results = new Results();
-        this.startTurn(250);
+        this.startTurn();
     }
 
     private timeLimit = Number.MAX_SAFE_INTEGER;
-    private startTs = now();
+    private startTs = 0n;
     private outOfTime = false;
 
-    private turns = 0;
+    private turns = -1;
     private resultCount = 0;
     private maxDepth = 0;
     private depth = 0;
     public iteration = 0;
+    public iterationBudget = 0;
     private dir: Dir | null = null;
-    private readonly results: Results;
+    public readonly results: Results;
 
-    startTurn(timeLimit = Infinity): void {
+    public budgetStack: Budget[] = [];
+
+    private budgetAllocationStats: {[op: string]: number} = {
+        L: 0,
+        R: 0,
+        U: 0,
+        D: 0,
+        f: 0,
+        s1: 0,
+        s2: 0,
+    };
+
+    private budgetAllocationTable: {[op: string]: number} = {
+        L: 1 / 4,
+        R: 1 / 3,
+        U: 1 / 2,
+        D: 1,
+        f: 0.9,
+        s1: 1 / 2,
+        s2: 1,
+    };
+
+    getActualBudgetAllocationTable(): {
+        op: string;
+        count: number;
+        fraction: number;
+    }[] {
+        const e = Object.entries(this.budgetAllocationStats);
+        const total = e.reduce((a, b) => a + b[1], 0);
+        return e
+            .map(([op, count]) => ({
+                op,
+                count,
+                fraction: count / total,
+            }))
+            .concat([{op: 'total', count: total, fraction: 1}]);
+    }
+    startTurn({timeLimit = Infinity, iterationBudget = Infinity} = {}): void {
         this.timeLimit = timeLimit;
-        this.startTs = now();
+        this.startTs = process.hrtime.bigint();
         this.outOfTime = false;
         this.depth = 0;
         this.dir = null;
@@ -537,11 +527,14 @@ class Iterator {
         this.resultCount = 0;
         this.maxDepth = 0;
         this.iteration = 0;
+        this.iterationBudget = iterationBudget;
         this.turns++;
+
+        this.budgetStack = [];
     }
 
     getTimeSpent(): number {
-        return now() - this.startTs;
+        return Number(process.hrtime.bigint() - this.startTs) / 1_000_000;
     }
 
     printTurnStats(): void {
@@ -549,7 +542,7 @@ class Iterator {
         this.log(
             'Turn %d: %s ms, %d i/ms, %d/%d depth, %d results, %d iterations',
             this.turns,
-            ms.toPrecision(3),
+            ms.toFixed(0),
             Math.round(this.iteration / ms),
             this.depth,
             this.maxDepth,
@@ -571,12 +564,52 @@ class Iterator {
         return !this.outOfTime;
     }
 
-    iteratePlayer(playerIdx = 0): void {
-        this.iteration++;
+    allocateBudget(): void {
+        if (this.depth > 1) return;
+        this.budgetStack.push({
+            remaining: this.iterationBudget,
+            total: this.iterationBudget,
+            iteration: this.iteration,
+        });
+        const budget = this.budgetStack[this.budgetStack.length - 2];
+        if (!budget) return;
+    }
+
+    deallocateBudget(): void {
+        if (this.depth > 1) return;
+        const budget = this.budgetStack.pop();
+        if (!budget) return;
+    }
+
+    beforeSpend(op: string): void {
+        if (this.depth > 1) return;
+        const budget = last(this.budgetStack);
+        if (!budget) return;
+
+        const fraction = this.budgetAllocationTable[op];
+        const spent = this.iteration - budget.iteration;
+        budget.remaining -= spent;
+        budget.iteration = this.iteration;
+        this.iterationBudget = Math.round(budget.remaining * fraction);
+    }
+
+    afterSpend(op: string): void {
+        if (this.depth > 1) return;
+        const budget = last(this.budgetStack);
+        if (!budget) return;
+
+        const spent = this.iteration - budget.iteration;
+        this.budgetAllocationStats[op]++;
+        budget.remaining -= spent;
+        budget.iteration = this.iteration;
+    }
+
+    iteratePlayer(playerIdx: number): void {
         if (playerIdx >= this.game.players.length) {
             this.iterateTurn();
             return;
         }
+
         const player = this.game.players[playerIdx];
         if (player.isDead) {
             this.iteratePlayer(playerIdx + 1);
@@ -584,6 +617,10 @@ class Iterator {
         }
 
         let madeAStep = false;
+
+        this.allocateBudget();
+        this.iteration++;
+        this.iterationBudget--;
 
         if (player.isFirstTurn()) {
             dirs.forEach(dir => {
@@ -595,13 +632,17 @@ class Iterator {
                     return;
                 }
                 madeAStep = true;
+                this.beforeSpend(dir[0]);
                 this.iteratePlayer(playerIdx + 1);
+                this.afterSpend(dir[0]);
                 this.game.stepBack(playerIdx);
             });
         } else {
             if (this.game.tryStepForward(playerIdx)) {
                 madeAStep = true;
+                this.beforeSpend('f');
                 this.iteratePlayer(playerIdx + 1);
+                this.afterSpend('f');
                 this.game.stepBack(playerIdx);
             }
 
@@ -609,17 +650,22 @@ class Iterator {
                 this.depth < 10 && this.game.distToClosestPlayer() < 3;
             const checkCorners = !nearEnemy && madeAStep;
 
-            player.getSideDirs().forEach(dir => {
+            player.getSideDirs().forEach((dir, i) => {
                 if (!this.game.tryStepToSide(playerIdx, dir, {checkCorners})) {
                     return;
                 }
                 madeAStep = true;
+                this.beforeSpend('s' + (i + 1));
                 this.iteratePlayer(playerIdx + 1);
+                this.afterSpend('s' + (i + 1));
                 this.game.stepBack(playerIdx);
             });
         }
+        this.deallocateBudget();
 
-        if (madeAStep) return;
+        if (madeAStep) {
+            return;
+        }
 
         player.isDead = true;
         this.iteratePlayer(playerIdx + 1);
@@ -627,24 +673,25 @@ class Iterator {
     }
 
     iterateTurn(): void {
-        if (this.game.players[0].isDead) {
-            this.addResult();
-            return;
-        }
         if (this.depth === 0) {
             this.dir = this.game.players[0].dir;
         }
-        if (!this.hasTimeLeft() || this.game.hasEnded()) {
-            this.addResult();
-        } else {
-            this.depth++;
-            this.iteratePlayer();
-            this.depth--;
+        if (
+            this.game.players[0].isDead ||
+            this.iterationBudget < 0 ||
+            !this.hasTimeLeft() ||
+            this.game.hasEnded()
+        ) {
+            return this.addResult();
         }
+
+        this.depth++;
+        this.iteratePlayer(0);
+        this.depth--;
     }
 
     addResult(): void {
-        if (!this.dir) return;
+        if (!this.dir) throw new Error('Early addResult');
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
         this.resultCount++;
         this.results.add({
@@ -654,17 +701,15 @@ class Iterator {
         });
     }
     findBestDir(): Dir | null {
-        this.iteratePlayer();
+        this.iteratePlayer(0);
 
-        // const dir = getMax(
-        //     scoreResults(this.results, this.game.players.length),
-        // );
         this.printTurnStats();
         return this.results.getDir();
     }
 }
 
-const turnTimeLimit = 50;
+const timeLimit = 100;
+const iterationBudget = 50_000;
 
 function go(
     game: Game,
@@ -675,7 +720,7 @@ function go(
         const input = readState(readline);
         if (input == null) break;
 
-        game.iterator.startTurn(turnTimeLimit);
+        game.iterator.startTurn({timeLimit, iterationBudget});
         game.stepFromInput(input);
 
         const dir = game.iterator.findBestDir();
