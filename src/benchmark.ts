@@ -15,11 +15,5 @@ game.stepFromInput({
 console.log(game.toString());
 
 game.iterator.findBestDir();
-console.table(
-    Object.entries(game.iterator.results.scores).map(([dir, {sum, count}]) => ({
-        dir,
-        count,
-        score: sum / count,
-    })),
-);
+console.log(game.iterator.results.toString());
 console.table(game.iterator.getActualBudgetAllocationTable());

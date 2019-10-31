@@ -2,8 +2,8 @@
 
 exports[`Flood fill Sample input 1`] = `
 Array [
-  305,
-  233,
+  306,
+  234,
 ]
 `;
 
@@ -33,8 +33,8 @@ exports[`Flood fill Sample input 2`] = `
 
 exports[`Flood fill Sample input 2 1`] = `
 Array [
-  296,
-  240,
+  297,
+  241,
 ]
 `;
 
@@ -64,8 +64,8 @@ exports[`Flood fill Sample input 2 2`] = `
 
 exports[`Flood fill Sample input 3 1`] = `
 Array [
-  198,
-  336,
+  199,
+  337,
 ]
 `;
 
@@ -357,7 +357,9 @@ exports[`Iterator Single player 21`] = `
 1/16"
 `;
 
-exports[`Iterator Two players 1`] = `
+exports[`Iterator Two players 1`] = `0`;
+
+exports[`Iterator Two players 2`] = `
 "⋅ ⋅ ⋅ ⋅
 ╔═════►
 ║ ⋅ ⋅ ⋅
@@ -365,7 +367,9 @@ exports[`Iterator Two players 1`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 2`] = `
+exports[`Iterator Two players 3`] = `0`;
+
+exports[`Iterator Two players 4`] = `
 "⋅ ⋅ ▲ ⋅
 ╔═══╝ ⋅
 ║ ◇ ⋅ ⋅
@@ -373,7 +377,9 @@ exports[`Iterator Two players 2`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 3`] = `
+exports[`Iterator Two players 5`] = `0`;
+
+exports[`Iterator Two players 6`] = `
 "⋅ ◇ ⋅ ⋅
 ╔═══╗ ⋅
 ║ ⋅ ▼ ⋅
@@ -381,37 +387,7 @@ exports[`Iterator Two players 3`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 4`] = `
-"⋅ ⋅ ⋅ ⋅
-╔═╗ ⋅ ⋅
-║ ╚═► ⋅
-╚═════1
-9/16"
-`;
-
-exports[`Iterator Two players 5`] = `
-"▲ ⋅ ⋅ ⋅
-╚═╗ ⋅ ⋅
-╔═╝ ⋅ ◇
-╚═════1
-9/16"
-`;
-
-exports[`Iterator Two players 6`] = `
-"0━━━━━┓
-⋅ ◄━━━┛
-⋅ ⋅ ⋅ ⋅
-⋅ ⋅ ⋅ ⋅
-7/16"
-`;
-
-exports[`Iterator Two players 7`] = `
-"0━━━━━┓
-⋅ ⋅ ┏━┛
-⋅ ◄━┛ ⋅
-⋅ ⋅ ⋅ ⋅
-8/16"
-`;
+exports[`Iterator Two players 7`] = `0`;
 
 exports[`Iterator Two players 8`] = `
 "⋅ ⋅ ⋅ ⋅
@@ -421,13 +397,7 @@ exports[`Iterator Two players 8`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 9`] = `
-"⋅ ⋅ ⋅ ⋅
-⋅ ⋅ ⋅ ▲
-╔═════╝
-╚═════1
-9/16"
-`;
+exports[`Iterator Two players 9`] = `0`;
 
 exports[`Iterator Two players 10`] = `
 "▲ ⋅ ⋅ ⋅
@@ -437,7 +407,59 @@ exports[`Iterator Two players 10`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 11`] = `
+exports[`Iterator Two players 11`] = `1`;
+
+exports[`Iterator Two players 12`] = `
+"0━━━━━┓
+⋅ ◄━━━┛
+⋅ ⋅ ⋅ ⋅
+⋅ ⋅ ⋅ ⋅
+7/16"
+`;
+
+exports[`Iterator Two players 13`] = `1`;
+
+exports[`Iterator Two players 14`] = `
+"0━━━━━┓
+⋅ ⋅ ┏━┛
+⋅ ◄━┛ ⋅
+⋅ ⋅ ⋅ ⋅
+8/16"
+`;
+
+exports[`Iterator Two players 15`] = `0`;
+
+exports[`Iterator Two players 16`] = `
+"⋅ ⋅ ⋅ ⋅
+╔═╗ ⋅ ⋅
+║ ╚═► ⋅
+╚═════1
+9/16"
+`;
+
+exports[`Iterator Two players 17`] = `0`;
+
+exports[`Iterator Two players 18`] = `
+"⋅ ⋅ ⋅ ⋅
+⋅ ⋅ ⋅ ▲
+╔═════╝
+╚═════1
+9/16"
+`;
+
+exports[`Iterator Two players 19`] = `0`;
+
+exports[`Iterator Two players 20`] = `
+"▲ ⋅ ⋅ ⋅
+╚═╗ ⋅ ⋅
+╔═╝ ⋅ ◇
+╚═════1
+9/16"
+`;
+
+exports[`Iterator Two players 21`] = `0`;
+
+exports[`Iterator Two players 22`] = `
 "⋅ ⋅ ⋅ ⋅
 ⋅ ◄═══╗
 ⋅ ⋅ ⋅ ║
@@ -445,7 +467,9 @@ exports[`Iterator Two players 11`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 12`] = `
+exports[`Iterator Two players 23`] = `0`;
+
+exports[`Iterator Two players 24`] = `
 "⋅ ⋅ ▲ ⋅
 ⋅ ⋅ ╚═╗
 ⋅ ⋅ ⋅ ║
@@ -453,7 +477,9 @@ exports[`Iterator Two players 12`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 13`] = `
+exports[`Iterator Two players 25`] = `0`;
+
+exports[`Iterator Two players 26`] = `
 "⋅ ⋅ ⋅ ◇
 ⋅ ⋅ ╔═╗
 ⋅ ⋅ ▼ ║
@@ -461,7 +487,9 @@ exports[`Iterator Two players 13`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 14`] = `
+exports[`Iterator Two players 27`] = `1`;
+
+exports[`Iterator Two players 28`] = `
 "0━━━┓ ⋅
 ⋅ ⋅ ┃ ⋅
 ⋅ ⋅ ▼ ⋅
@@ -469,7 +497,9 @@ exports[`Iterator Two players 14`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 15`] = `
+exports[`Iterator Two players 29`] = `1`;
+
+exports[`Iterator Two players 30`] = `
 "0━━━┓ ◆
 ⋅ ◄━┛ ⋅
 ⋅ ⋅ ⋅ ⋅
@@ -477,7 +507,9 @@ exports[`Iterator Two players 15`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 16`] = `
+exports[`Iterator Two players 31`] = `0`;
+
+exports[`Iterator Two players 32`] = `
 "⋅ ⋅ ⋅ ⋅
 ⋅ ▲ ⋅ ⋅
 ⋅ ║ ⋅ ⋅
@@ -485,7 +517,9 @@ exports[`Iterator Two players 16`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 17`] = `
+exports[`Iterator Two players 33`] = `0`;
+
+exports[`Iterator Two players 34`] = `
 "⋅ ⋅ ⋅ ◇
 ⋅ ⋅ ⋅ ⋅
 ◄═╗ ⋅ ◇
@@ -493,7 +527,9 @@ exports[`Iterator Two players 17`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 18`] = `
+exports[`Iterator Two players 35`] = `0`;
+
+exports[`Iterator Two players 36`] = `
 "⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅
 ⋅ ╔═► ⋅
@@ -501,7 +537,9 @@ exports[`Iterator Two players 18`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 19`] = `
+exports[`Iterator Two players 37`] = `1`;
+
+exports[`Iterator Two players 38`] = `
 "0 ⋅ ⋅ ⋅
 ┃ ⋅ ⋅ ⋅
 ┗━━━► ⋅
@@ -509,7 +547,9 @@ exports[`Iterator Two players 19`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 20`] = `
+exports[`Iterator Two players 39`] = `1`;
+
+exports[`Iterator Two players 40`] = `
 "0 ⋅ ⋅ ⋅
 ┃ ▲ ⋅ ⋅
 ┗━┛ ⋅ ⋅
@@ -517,7 +557,9 @@ exports[`Iterator Two players 20`] = `
 5/16"
 `;
 
-exports[`Iterator Two players 21`] = `
+exports[`Iterator Two players 41`] = `0`;
+
+exports[`Iterator Two players 42`] = `
 "⋅ ╔═══╗
 ⋅ ║ ⋅ ║
 ⋅ ║ ⋅ ║
@@ -525,7 +567,9 @@ exports[`Iterator Two players 21`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 22`] = `
+exports[`Iterator Two players 43`] = `0`;
+
+exports[`Iterator Two players 44`] = `
 "⋅ ╔═══╗
 ⋅ ║ ◇ ║
 ◄═╝ ⋅ ║
@@ -533,7 +577,9 @@ exports[`Iterator Two players 22`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 23`] = `
+exports[`Iterator Two players 45`] = `0`;
+
+exports[`Iterator Two players 46`] = `
 "⋅ ╔═══╗
 ◇ ║ ⋅ ║
 ⋅ ╚═► ║
@@ -541,7 +587,9 @@ exports[`Iterator Two players 23`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 24`] = `
+exports[`Iterator Two players 47`] = `0`;
+
+exports[`Iterator Two players 48`] = `
 "⋅ ╔═══╗
 ⋅ ╚═╗ ║
 ⋅ ⋅ ▼ ║
@@ -549,7 +597,9 @@ exports[`Iterator Two players 24`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 25`] = `
+exports[`Iterator Two players 49`] = `0`;
+
+exports[`Iterator Two players 50`] = `
 "◄═╗ ╔═╗
 ⋅ ╚═╝ ║
 ⋅ ⋅ ⋅ ║
@@ -557,7 +607,9 @@ exports[`Iterator Two players 25`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 26`] = `
+exports[`Iterator Two players 51`] = `1`;
+
+exports[`Iterator Two players 52`] = `
 "0 ⋅ ⋅ ⋅
 ┃ ▲ ⋅ ⋅
 ┃ ┃ ⋅ ⋅
@@ -565,7 +617,9 @@ exports[`Iterator Two players 26`] = `
 7/16"
 `;
 
-exports[`Iterator Two players 27`] = `
+exports[`Iterator Two players 53`] = `1`;
+
+exports[`Iterator Two players 54`] = `
 "0 ⋅ ⋅ ⋅
 ┃ ⋅ ▲ ⋅
 ┃ ┏━┛ ⋅
@@ -573,7 +627,9 @@ exports[`Iterator Two players 27`] = `
 8/16"
 `;
 
-exports[`Iterator Two players 28`] = `
+exports[`Iterator Two players 55`] = `0`;
+
+exports[`Iterator Two players 56`] = `
 "⋅ ╔═══╗
 ⋅ ╚═╗ ║
 ⋅ ⋅ ▼ ║
@@ -581,7 +637,9 @@ exports[`Iterator Two players 28`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 29`] = `
+exports[`Iterator Two players 57`] = `0`;
+
+exports[`Iterator Two players 58`] = `
 "⋅ ⋅ ╔═╗
 ⋅ ⋅ ║ ║
 ⋅ ⋅ ║ ║
@@ -589,7 +647,9 @@ exports[`Iterator Two players 29`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 30`] = `
+exports[`Iterator Two players 59`] = `0`;
+
+exports[`Iterator Two players 60`] = `
 "◄═╗ ╔═╗
 ⋅ ╚═╝ ║
 ⋅ ⋅ ⋅ ║
@@ -597,10 +657,24 @@ exports[`Iterator Two players 30`] = `
 9/16"
 `;
 
-exports[`Iterator Two players 31`] = `
+exports[`Iterator Two players 61`] = `
 "0 ⋅ ⋅ ⋅
 ⋅ ⋅ ◆ ⋅
 ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ◇ 1
 2/16"
+`;
+
+exports[`Iterator Two players 62`] = `
+"← NaN
+→ 0.2667
+↑ NaN
+↓ 0.2667"
+`;
+
+exports[`Iterator Two players 63`] = `
+"← NaN
+→ 0.7500
+↑ NaN
+↓ 0.7500"
 `;

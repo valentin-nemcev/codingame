@@ -106,7 +106,7 @@ describe('Iterator', () => {
         game.addPlayer({x: 0, y: 0});
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.onResult = (): void => {
+        game.iterator.results.onResult = (): void => {
             expect(game.toString()).toMatchSnapshot();
         };
         game.iterator.iteratePlayer(0);
@@ -120,11 +120,34 @@ describe('Iterator', () => {
         game.addPlayer({x: 3, y: 3});
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.onResult = (): void => {
+        game.iterator.results.onResult = (score): void => {
+            // console.log(game.toString());
+            // console.log(score);
+            expect(score).toMatchSnapshot();
             expect(game.toString()).toMatchSnapshot();
         };
         game.iterator.iteratePlayer(0);
 
         expect(game.toString()).toMatchSnapshot();
+        expect(game.iterator.results.toString()).toMatchSnapshot();
+    });
+
+    test('Two players', () => {
+        const game = new Game({grid: {width: 5, height: 5}});
+        game.addPlayer({x: 0, y: 0});
+        game.addPlayer({x: 4, y: 4});
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        game.iterator.results.onResult = (score): void => {
+            if (isNaN(score)) {
+                console.log(game.toString());
+            }
+            // console.log(score);
+            // expect(score).toMatchSnapshot();
+            // expect(game.toString()).toMatchSnapshot();
+        };
+        game.iterator.iteratePlayer(0);
+
+        expect(game.iterator.results.toString()).toMatchSnapshot();
     });
 });

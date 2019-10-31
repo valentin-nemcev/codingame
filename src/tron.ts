@@ -111,8 +111,8 @@ const sides: {readonly [dir in Dir]: [Dir, Dir]} = {
 };
 
 const dirToString: {readonly [dir in Dir]: string} = {
-    LEFT: '<',
-    RIGHT: '>',
+    LEFT: '←',
+    RIGHT: '→',
     UP: '↑',
     DOWN: '↓',
 };
@@ -281,6 +281,7 @@ class Grid {
         const result = players.map(() => 0);
         players.forEach((p, i) => {
             if (p.isDead) return;
+            result[i]++;
             const cell = this.cellAt(p.pos);
             cell.markDistance(i, 0, this.floodfillCounter);
             queue.push(p.pos);
@@ -498,13 +499,14 @@ class Game {
     }
 }
 
-type Result = {dir: Dir; scores: number[]; empty: number};
+type Result = {dir: Dir; scores: number[]};
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
 type Log = typeof log;
 
 class Results {
+    public onResult = (score: number): void => void score;
     readonly scores: {[d in Dir]: {sum: number; count: number}} = {
         LEFT: {sum: 0, count: 0},
         RIGHT: {sum: 0, count: 0},
@@ -532,10 +534,24 @@ class Results {
         return result;
     }
 
-    add({dir, empty, scores: [myScore, ...otherScores]}: Result): void {
+    add({dir, scores}: Result): void {
+        const total = sum(scores);
+        const score = scores[0] / total;
+        this.onResult(score);
         const s = this.scores[dir];
         s.count++;
-        s.sum += (myScore - sum(otherScores)) / empty;
+        s.sum += score;
+    }
+
+    toString(): string {
+        return Object.entries(this.scores)
+            .map(
+                ([dir, {sum, count}]) =>
+                    dirToString[dir as Dir] +
+                    ' ' +
+                    (sum / count).toPrecision(4),
+            )
+            .join('\n');
     }
 }
 
@@ -546,7 +562,6 @@ type Budget = {
 };
 
 class Iterator {
-    public onResult = (): void => {};
     private log: Log;
     constructor(readonly game: Game, log: Log = logNoop) {
         this.log = log;
@@ -784,9 +799,7 @@ class Iterator {
         this.results.add({
             dir: this.dir,
             scores: this.game.grid.floodfill(this.game.players),
-            empty: this.game.getEmptyCount(),
         });
-        this.onResult();
     }
 
     findBestDir(): Dir | null {
