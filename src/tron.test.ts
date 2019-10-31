@@ -138,11 +138,9 @@ describe('Iterator', () => {
         game.addPlayer({x: 4, y: 4});
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.results.onResult = (score): void => {
-            if (isNaN(score)) {
-                console.log(game.toString());
-            }
+        game.iterator.results.onResult = (): void => {
             // console.log(score);
+            console.log(game.toString());
             // expect(score).toMatchSnapshot();
             // expect(game.toString()).toMatchSnapshot();
         };

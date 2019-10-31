@@ -22,7 +22,7 @@ function sum(arr: number[]): number {
 const TRAIL_CHARS: {[key: string]: string} = {
     UNKNOWN: '? ',
 
-    EMPTY: '⋅ ',
+    EMPTY: '  ',
 
     FILL: '⋅ ◆ ⋅ ◇ ⋅ ○ ',
     // FILL: '▤ ▥ ▧ ▨ ▩ ▦ ',
@@ -243,7 +243,7 @@ class Grid {
     public readonly size: number;
 
     public readonly grid: Cell[] = [];
-    private floodfillCounter = 0;
+    public floodfillCounter = 0;
 
     constructor({width = 30, height = 20}: GridParams = {}) {
         this.width = width;
@@ -454,7 +454,12 @@ class Game {
 
     toString(): string {
         const canvas = this.grid.grid.map((cell: Cell) => {
-            if (cell.distanceTo == -1) return TRAIL_CHARS.EMPTY;
+            if (
+                cell.distanceTo == -1 ||
+                cell.floodfillCounter !== this.grid.floodfillCounter
+            ) {
+                return TRAIL_CHARS.EMPTY;
+            }
             const i = cell.distanceTo * 4 + Number(cell.distance % 5 == 0) * 2;
             return TRAIL_CHARS.FILL.slice(i, i + 2);
         });
@@ -489,12 +494,18 @@ class Game {
                 headDir = tailDir;
             }
         });
-        const grid = canvas.reduce(
-            (s, c, i) =>
-                s +
-                ((i + 1) % this.grid.width === 0 ? c.slice(0, -1) + '\n' : c),
-            '',
-        );
+        const grid =
+            canvas.reduce(
+                (s, c, i) =>
+                    s +
+                    (i % this.grid.width === 0 ? '  ' : '') +
+                    ((i + 1) % this.grid.width === 0
+                        ? c.slice(0, -1) + '\n'
+                        : c),
+                '┌╴\n', //
+            ) +
+            '  '.repeat(this.grid.width) +
+            ' ╶┘\n';
         return grid + this.getNonEmptyCount() + '/' + this.grid.size;
     }
 }
