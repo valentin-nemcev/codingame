@@ -24,7 +24,7 @@ const TRAIL_CHARS: {[key: string]: string} = {
 
     EMPTY: '⋅ ',
 
-    FILL: '▤ ◇ ▧ ◇ ▩ ◇ ',
+    FILL: '⋅ ◆ ⋅ ◇ ⋅ ○ ',
     // FILL: '▤ ▥ ▧ ▨ ▩ ▦ ',
 
     STARTEND: '0 1 2 ',
@@ -140,9 +140,6 @@ function readState(readline: () => string): Input | null {
     return {myIdx, startPosList, posList};
 }
 
-const gridWidth = 30;
-const gridHeight = 20;
-
 class Player {
     trailLength = 0;
     readonly startPos: Pos;
@@ -151,6 +148,7 @@ class Player {
     isDead = false;
     constructor(pos: Pos) {
         this.pos = this.startPos = pos;
+        this.trailLength = 1;
     }
     isFirstTurn(): boolean {
         return this.dir == null;
@@ -238,18 +236,26 @@ class Cell {
     }
 }
 
+type GridParams = {width?: number; height?: number};
 class Grid {
+    public readonly width: number;
+    public readonly height: number;
+    public readonly size: number;
+
     public readonly grid: Cell[] = [];
     private floodfillCounter = 0;
 
-    constructor() {
-        for (let i = 0; i < gridWidth * gridHeight; i++) {
+    constructor({width = 30, height = 20}: GridParams = {}) {
+        this.width = width;
+        this.height = height;
+        this.size = width * height;
+        for (let i = 0; i < this.size; i++) {
             this.grid.push(new Cell());
         }
     }
 
     isPosOnGrid({x, y}: Pos): boolean {
-        return 0 <= x && x < gridWidth && 0 <= y && y < gridHeight;
+        return 0 <= x && x < this.width && 0 <= y && y < this.height;
     }
 
     cellAt(pos: Pos): Cell {
@@ -258,12 +264,12 @@ class Grid {
                 `Can't access cell outside grid: ${posToString(pos)}`,
             );
         }
-        return this.grid[pos.y * gridWidth + pos.x];
+        return this.grid[pos.y * this.width + pos.x];
     }
 
     getEmptyCellAt(pos: Pos, players: Player[]): Cell | null {
         if (!this.isPosOnGrid(pos)) return null;
-        const cell = this.grid[pos.y * gridWidth + pos.x];
+        const cell = this.grid[pos.y * this.width + pos.x];
         if (!cell.isEmpty(players)) return null;
 
         return cell;
@@ -274,6 +280,7 @@ class Grid {
         const queue: Pos[] = [];
         const result = players.map(() => 0);
         players.forEach((p, i) => {
+            if (p.isDead) return;
             const cell = this.cellAt(p.pos);
             cell.markDistance(i, 0, this.floodfillCounter);
             queue.push(p.pos);
@@ -301,9 +308,9 @@ class Grid {
 
     toString(): string {
         let result = '';
-        for (let y = 0; y < gridHeight; y++) {
+        for (let y = 0; y < this.height; y++) {
             let line = '';
-            for (let x = 0; x < gridWidth; x++) line += this.cellAt({x, y});
+            for (let x = 0; x < this.width; x++) line += this.cellAt({x, y});
             result += line + '\n';
         }
         return result;
@@ -315,13 +322,25 @@ class Game {
     public readonly iterator: Iterator;
     players: Player[] = [];
 
-    constructor(log?: Log) {
-        this.grid = new Grid();
+    constructor({log, grid}: {log?: Log; grid?: GridParams} = {}) {
+        this.grid = new Grid(grid);
         this.iterator = new Iterator(this, log); //eslint-disable-line @typescript-eslint/no-use-before-define
     }
 
     hasEnded(): boolean {
-        return this.players.filter(player => !player.isDead).length <= 1;
+        if (this.players.length > 1) {
+            const alive = this.players.reduce(
+                (c, player) => c + Number(!player.isDead),
+                0,
+            );
+            return alive <= 1;
+        } else {
+            return this.getEmptyCount() === 0;
+        }
+    }
+
+    getEmptyCount(): number {
+        return this.grid.size - this.getNonEmptyCount();
     }
 
     getNonEmptyCount(): number {
@@ -439,7 +458,7 @@ class Game {
             return TRAIL_CHARS.FILL.slice(i, i + 2);
         });
         const draw = (pos: Pos, c: string): void => {
-            canvas[pos.y * gridWidth + pos.x] = c;
+            canvas[pos.y * this.grid.width + pos.x] = c;
         };
         const getTrail = (
             playerIdx: number,
@@ -453,6 +472,7 @@ class Game {
             return chars.slice(i, i + 2);
         };
         this.players.forEach((player, i) => {
+            if (player.isDead) return;
             let headPos: Pos | null = null;
             let headDir: Dir | null = null;
             let tailPos = player.pos;
@@ -468,21 +488,23 @@ class Game {
                 headDir = tailDir;
             }
         });
-        const total = gridWidth * gridHeight;
         return (
             canvas.reduce(
                 (s, c, i) =>
-                    s + ((i + 1) % gridWidth === 0 ? c.slice(0, -1) + '\n' : c),
+                    s +
+                    ((i + 1) % this.grid.width === 0
+                        ? c.slice(0, -1) + '\n'
+                        : c),
                 '',
             ) +
             this.getNonEmptyCount() +
             '/' +
-            total
+            this.grid.size
         );
     }
 }
 
-type Result = {dir: Dir; scores: number[]; nonEmpty: number};
+type Result = {dir: Dir; scores: number[]; empty: number};
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
@@ -516,11 +538,10 @@ class Results {
         return result;
     }
 
-    add({dir, nonEmpty, scores: [myScore, ...otherScores]}: Result): void {
+    add({dir, empty, scores: [myScore, ...otherScores]}: Result): void {
         const s = this.scores[dir];
         s.count++;
-        s.sum +=
-            (myScore - sum(otherScores)) / (gridWidth * gridHeight - nonEmpty);
+        s.sum += (myScore - sum(otherScores)) / empty;
     }
 }
 
@@ -531,6 +552,7 @@ type Budget = {
 };
 
 class Iterator {
+    public onResult = (): void => {};
     private log: Log;
     constructor(readonly game: Game, log: Log = logNoop) {
         this.log = log;
@@ -750,7 +772,6 @@ class Iterator {
         if (
             this.game.players[0].isDead ||
             this.iterationBudget < 0 ||
-            this.depth > 10 ||
             !this.hasTimeLeft() ||
             this.game.hasEnded()
         ) {
@@ -769,9 +790,11 @@ class Iterator {
         this.results.add({
             dir: this.dir,
             scores: this.game.grid.floodfill(this.game.players),
-            nonEmpty: this.game.getNonEmptyCount(),
+            empty: this.game.getEmptyCount(),
         });
+        this.onResult();
     }
+
     findBestDir(): Dir | null {
         this.iteratePlayer(0);
 
@@ -803,5 +826,5 @@ function go(
 
 export {readState, Game, Results, go};
 if (require.main === module) {
-    go(new Game(log), readline, console.log.bind(console));
+    go(new Game({log}), readline, console.log.bind(console));
 }

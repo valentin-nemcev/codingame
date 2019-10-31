@@ -1,4 +1,4 @@
-import {readState, Game, Results} from './tron';
+import {readState, Game} from './tron';
 import sampleInput from './sample_input';
 import sampleInput2 from './sample_input2';
 
@@ -97,5 +97,34 @@ describe('Flood fill', () => {
             game2.grid.floodfill(game2.players),
         );
         expect(game1.grid.toString()).toEqual(game2.grid.toString());
+    });
+});
+
+describe('Iterator', () => {
+    test('Single player', () => {
+        const game = new Game({grid: {width: 4, height: 4}});
+        game.addPlayer({x: 0, y: 0});
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        game.iterator.onResult = (): void => {
+            expect(game.toString()).toMatchSnapshot();
+        };
+        game.iterator.iteratePlayer(0);
+
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Two players', () => {
+        const game = new Game({grid: {width: 4, height: 4}});
+        game.addPlayer({x: 0, y: 0});
+        game.addPlayer({x: 3, y: 3});
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        game.iterator.onResult = (): void => {
+            expect(game.toString()).toMatchSnapshot();
+        };
+        game.iterator.iteratePlayer(0);
+
+        expect(game.toString()).toMatchSnapshot();
     });
 });
