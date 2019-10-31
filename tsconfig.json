@@ -3,7 +3,7 @@
         "allowJs": true,
         "resolveJsonModule": true,
 
-        "target": "esNext",
+        "target": "esnext",
         "module": "commonjs",
         "esModuleInterop": true,
         "removeComments": true,

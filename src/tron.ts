@@ -20,6 +20,9 @@ const TRAIL_CHARS: {[key: string]: string} = {
 
     EMPTY: '⋅ ',
 
+    FILL: '▤ ◇ ▧ ◇ ▩ ◇ ',
+    // FILL: '▤ ▥ ▧ ▨ ▩ ▦ ',
+
     STARTEND: '0 1 2 ',
 
     LEFTEND: '◄━◄═◄─',
@@ -113,6 +116,7 @@ const dirToString: {readonly [dir in Dir]: string} = {
 // const lines: string[] = [];
 function readInts(readline: () => string): number[] {
     const line = readline();
+    // lines.push(line);
     if (!line) return [];
     return line.split(' ').map(s => parseInt(s, 10));
 }
@@ -179,6 +183,10 @@ class Cell {
     dir: null | Dir = null;
     private deadTrails: {dir: Dir | null; trailOf: number}[] = [];
 
+    distanceTo = -1;
+    distance = -1;
+    floodfillCounter = 0;
+
     toString(): string {
         if (this.trailOf == -1) return ' ';
         else if (this.dir == null) return String(this.trailOf);
@@ -207,13 +215,24 @@ class Cell {
         }
     }
 
+    markDistance(
+        playerIdx: number,
+        distance: number,
+        floodfillCounter: number,
+    ) {
+        this.distanceTo = playerIdx;
+        this.distance = distance;
+        this.floodfillCounter = floodfillCounter;
+    }
+
     isEmpty(players: Player[]): boolean {
         return this.trailOf === -1 || players[this.trailOf].isDead;
     }
 }
 
 class Grid {
-    private grid: Cell[] = [];
+    public readonly grid: Cell[] = [];
+    private floodfillCounter = 0;
 
     constructor() {
         for (let i = 0; i < gridWidth * gridHeight; i++) {
@@ -240,6 +259,36 @@ class Grid {
         if (!cell.isEmpty(players)) return null;
 
         return cell;
+    }
+
+    floodfill(players: Player[]): number[] {
+        this.floodfillCounter++;
+        const queue: Pos[] = [];
+        const result = players.map(() => 0);
+        players.forEach((p, i) => {
+            const cell = this.cellAt(p.pos);
+            cell.markDistance(i, 0, this.floodfillCounter);
+            queue.push(p.pos);
+        });
+        for (;;) {
+            const pos = queue.shift();
+            if (!pos) break;
+            const cell = this.cellAt(pos);
+            dirs.forEach(dir => {
+                const p = shift[dir](pos);
+                const c = this.getEmptyCellAt(p, players);
+                if (!c || c.floodfillCounter === this.floodfillCounter) return;
+                c.markDistance(
+                    cell.distanceTo,
+                    cell.distance + 1,
+                    this.floodfillCounter,
+                );
+                result[cell.distanceTo]++;
+                queue.push(p);
+            });
+        }
+
+        return result;
     }
 
     toString(): string {
@@ -369,7 +418,11 @@ class Game {
     }
 
     toString(): string {
-        const canvas = Array(gridWidth * gridHeight).fill(TRAIL_CHARS.EMPTY);
+        const canvas = this.grid.grid.map((cell: Cell) => {
+            if (cell.distanceTo == -1) return TRAIL_CHARS.EMPTY;
+            const i = cell.distanceTo * 4 + Number(cell.distance % 5 == 0) * 2;
+            return TRAIL_CHARS.FILL.slice(i, i + 2);
+        });
         const draw = (pos: Pos, c: string): void => {
             canvas[pos.y * gridWidth + pos.x] = c;
         };

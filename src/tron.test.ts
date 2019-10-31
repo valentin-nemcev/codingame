@@ -1,5 +1,6 @@
 import {readState, Game, Results} from './tron';
 import sampleInput from './sample_input';
+import sampleInput2 from './sample_input2';
 
 function feedInput(game: Game, input: string[]): void {
     let line = 0;
@@ -112,5 +113,55 @@ describe('Score outcomes', () => {
             {dir: DOWN, depth: 208, isDead: [false, false]},
         ].forEach(result => results.add(result));
         expect(results.scores).toMatchSnapshot();
+    });
+});
+
+describe('Flood fill', () => {
+    test('Sample input', () => {
+        const game = new Game();
+        feedInput(game, sampleInput2);
+        expect(game.grid.floodfill(game.players)).toMatchSnapshot();
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Sample input 2', () => {
+        const game = new Game();
+        feedInput(game, sampleInput2.concat(['2 0', '8 12 0 13', '7 8 20 4']));
+        expect(game.grid.floodfill(game.players)).toMatchSnapshot();
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Sample input 3', () => {
+        const game = new Game();
+        feedInput(
+            game,
+            sampleInput2.concat([
+                '2 0',
+                '8 12 0 13',
+                '7 8 20 4',
+                '2 0',
+                '8 12 0 12',
+                '7 8 21 4',
+            ]),
+        );
+        expect(game.grid.floodfill(game.players)).toMatchSnapshot();
+        expect(game.toString()).toMatchSnapshot();
+    });
+
+    test('Consecutive', () => {
+        const game1 = new Game();
+        const game2 = new Game();
+        feedInput(game1, sampleInput2);
+        feedInput(game2, sampleInput2);
+        feedInput(game1, ['2 0', '8 12 0 13', '7 8 20 4']);
+        feedInput(game2, ['2 0', '8 12 0 13', '7 8 20 4']);
+        game1.grid.floodfill(game1.players);
+
+        feedInput(game1, ['2 0', '8 12 0 12', '7 8 21 4']);
+        feedInput(game2, ['2 0', '8 12 0 12', '7 8 21 4']);
+        expect(game1.grid.floodfill(game1.players)).toEqual(
+            game2.grid.floodfill(game2.players),
+        );
+        expect(game1.grid.toString()).toEqual(game2.grid.toString());
     });
 });
