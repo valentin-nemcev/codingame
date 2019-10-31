@@ -144,6 +144,7 @@ const gridWidth = 30;
 const gridHeight = 20;
 
 class Player {
+    trailLength = 0;
     readonly startPos: Pos;
     pos: Pos;
     dir: Dir | null = null;
@@ -164,16 +165,19 @@ class Player {
         this._assertAlive();
         this.dir = deriveDir(this.pos, pos);
         this.pos = pos;
+        this.trailLength++;
     }
     step(): void {
         this._assertAlive();
         if (!this.dir) throw this._dirUnsetErr();
         this.pos = shift[this.dir](this.pos);
+        this.trailLength++;
     }
     stepBack(): void {
         this._assertAlive();
         if (!this.dir) throw this._dirUnsetErr();
         this.pos = shift[opposite[this.dir]](this.pos);
+        this.trailLength--;
     }
     getSideDirs(): Dir[] {
         this._assertAlive();
@@ -320,6 +324,13 @@ class Game {
         return this.players.filter(player => !player.isDead).length <= 1;
     }
 
+    getNonEmptyCount(): number {
+        return this.players.reduce(
+            (count, p) => count + (p.isDead ? 0 : p.trailLength),
+            0,
+        );
+    }
+
     distToClosestPlayer(): number {
         let closestDist = Number.MAX_SAFE_INTEGER;
         const player = this.players[0];
@@ -457,15 +468,21 @@ class Game {
                 headDir = tailDir;
             }
         });
-        return canvas.reduce(
-            (s, c, i) =>
-                s + ((i + 1) % gridWidth === 0 ? c.slice(0, -1) + '\n' : c),
-            '',
+        const total = gridWidth * gridHeight;
+        return (
+            canvas.reduce(
+                (s, c, i) =>
+                    s + ((i + 1) % gridWidth === 0 ? c.slice(0, -1) + '\n' : c),
+                '',
+            ) +
+            this.getNonEmptyCount() +
+            '/' +
+            total
         );
     }
 }
 
-type Result = {dir: Dir; scores: number[]};
+type Result = {dir: Dir; scores: number[]; nonEmpty: number};
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
@@ -499,10 +516,11 @@ class Results {
         return result;
     }
 
-    add({dir, scores: [myScore, ...otherScores]}: Result): void {
+    add({dir, nonEmpty, scores: [myScore, ...otherScores]}: Result): void {
         const s = this.scores[dir];
         s.count++;
-        s.sum += myScore - sum(otherScores);
+        s.sum +=
+            (myScore - sum(otherScores)) / (gridWidth * gridHeight - nonEmpty);
     }
 }
 
@@ -751,6 +769,7 @@ class Iterator {
         this.results.add({
             dir: this.dir,
             scores: this.game.grid.floodfill(this.game.players),
+            nonEmpty: this.game.getNonEmptyCount(),
         });
     }
     findBestDir(): Dir | null {

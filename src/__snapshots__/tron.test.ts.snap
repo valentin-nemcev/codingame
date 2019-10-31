@@ -28,7 +28,7 @@ exports[`Flood fill Sample input 2`] = `
 ◇ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▧ ▧ ▧ ◇ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧
 ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧
 ▤ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ◇ ▧ ▧ ▧ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇
-"
+60/600"
 `;
 
 exports[`Flood fill Sample input 2 1`] = `
@@ -59,7 +59,7 @@ exports[`Flood fill Sample input 2 2`] = `
 ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧
 ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ▧ ▧ ▧ ▧ ◇ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧
 ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ▤ ▤ ▤ ▤ ◇ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧
-"
+62/600"
 `;
 
 exports[`Flood fill Sample input 3 1`] = `
@@ -90,7 +90,7 @@ exports[`Flood fill Sample input 3 2`] = `
 ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧
 ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧
 ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧ ▧ ◇ ▧ ▧ ▧
-"
+64/600"
 `;
 
 exports[`Game Sample input 1`] = `
@@ -114,7 +114,7 @@ exports[`Game Sample input 1`] = `
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
-"
+65/600"
 `;
 
 exports[`Game Start position when my index is 0 1`] = `
@@ -138,7 +138,7 @@ exports[`Game Start position when my index is 0 1`] = `
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
-"
+0/600"
 `;
 
 exports[`Game Start position when my index is 1 1`] = `
@@ -162,7 +162,7 @@ exports[`Game Start position when my index is 1 1`] = `
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
-"
+1/600"
 `;
 
 exports[`Game Start position when my index is 2 1`] = `
@@ -186,5 +186,5 @@ exports[`Game Start position when my index is 2 1`] = `
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
 ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅ ⋅
-"
+2/600"
 `;
