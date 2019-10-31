@@ -5,10 +5,11 @@ const game = new Game(log);
 
 game.iterator.startTurn({iterationBudget: 100_000});
 
+const pos = [{x: 20, y: 10}, {x: 10, y: 10}];
 game.stepFromInput({
     myIdx: 0,
-    startPosList: [{x: 29, y: 9}, {x: 10, y: 1}],
-    posList: [{x: 29, y: 9}, {x: 10, y: 1}],
+    startPosList: pos,
+    posList: pos,
 });
 
 console.log(game.toString());
@@ -19,5 +20,11 @@ console.log(game.toString());
 // });
 
 game.iterator.findBestDir();
-// console.log(game.iterator.results.scores);
+console.table(
+    Object.entries(game.iterator.results.scores).map(([dir, {sum, count}]) => ({
+        dir,
+        count,
+        score: sum / count,
+    })),
+);
 console.table(game.iterator.getActualBudgetAllocationTable());

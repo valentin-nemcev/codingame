@@ -4,6 +4,10 @@ function last<T>(a: T[]): T | undefined {
     return a[a.length - 1];
 }
 
+function sum(arr: number[]): number {
+    return arr.reduce((a, b) => a + b, 0);
+}
+
 // function shuffle<T extends Array<unknown>>(a: T): T {
 //     let j, x, i;
 //     for (i = a.length - 1; i > 0; i--) {
@@ -219,7 +223,7 @@ class Cell {
         playerIdx: number,
         distance: number,
         floodfillCounter: number,
-    ) {
+    ): void {
         this.distanceTo = playerIdx;
         this.distance = distance;
         this.floodfillCounter = floodfillCounter;
@@ -461,7 +465,7 @@ class Game {
     }
 }
 
-type Result = {dir: Dir; depth: number; isDead: boolean[]};
+type Result = {dir: Dir; scores: number[]};
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
@@ -495,14 +499,10 @@ class Results {
         return result;
     }
 
-    add({dir, depth, isDead: [meDead, ...othersDead]}: Result): void {
+    add({dir, scores: [myScore, ...otherScores]}: Result): void {
         const s = this.scores[dir];
         s.count++;
-        s.sum +=
-            2 ** (-1 * Math.log2(depth + 1)) *
-            (-Number(meDead) +
-                othersDead.map(Number).reduce((a, b) => a + b, 0) /
-                    othersDead.length);
+        s.sum += myScore - sum(otherScores);
     }
 }
 
@@ -732,6 +732,7 @@ class Iterator {
         if (
             this.game.players[0].isDead ||
             this.iterationBudget < 0 ||
+            this.depth > 10 ||
             !this.hasTimeLeft() ||
             this.game.hasEnded()
         ) {
@@ -749,8 +750,7 @@ class Iterator {
         this.resultCount++;
         this.results.add({
             dir: this.dir,
-            depth: this.depth,
-            isDead: this.game.players.map(p => p.isDead),
+            scores: this.game.grid.floodfill(this.game.players),
         });
     }
     findBestDir(): Dir | null {
@@ -761,8 +761,8 @@ class Iterator {
     }
 }
 
-const timeLimit = 100;
-const iterationBudget = 50_000;
+const timeLimit = 95;
+const iterationBudget = 10_000;
 
 function go(
     game: Game,
