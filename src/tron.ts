@@ -488,19 +488,13 @@ class Game {
                 headDir = tailDir;
             }
         });
-        return (
-            canvas.reduce(
-                (s, c, i) =>
-                    s +
-                    ((i + 1) % this.grid.width === 0
-                        ? c.slice(0, -1) + '\n'
-                        : c),
-                '',
-            ) +
-            this.getNonEmptyCount() +
-            '/' +
-            this.grid.size
+        const grid = canvas.reduce(
+            (s, c, i) =>
+                s +
+                ((i + 1) % this.grid.width === 0 ? c.slice(0, -1) + '\n' : c),
+            '',
         );
+        return grid + this.getNonEmptyCount() + '/' + this.grid.size;
     }
 }
 
