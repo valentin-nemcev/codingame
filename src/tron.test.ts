@@ -134,17 +134,24 @@ describe('Iterator', () => {
 
     test('Two players', () => {
         const game = new Game({grid: {width: 5, height: 5}});
-        game.addPlayer({x: 0, y: 0});
+        game.addPlayer({x: 2, y: 2});
         game.addPlayer({x: 4, y: 4});
 
+        game.iterator.startTurn({iterationBudget: 2000});
+
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.results.onResult = (): void => {
+        game.iterator.results.onResult = (score): void => {
             // console.log(score);
-            console.log(game.toString());
+            if (isNaN(score)) {
+                game.players.forEach(p => (p.isDead = false));
+                console.log(game.toString());
+            }
             // expect(score).toMatchSnapshot();
             // expect(game.toString()).toMatchSnapshot();
         };
         game.iterator.iteratePlayer(0);
+        console.log(game.iterator.iteration);
+        console.log(game.iterator.resultCount);
 
         expect(game.iterator.results.toString()).toMatchSnapshot();
     });

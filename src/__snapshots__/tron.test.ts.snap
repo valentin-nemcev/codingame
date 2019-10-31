@@ -784,15 +784,15 @@ exports[`Iterator Two players 61`] = `
 `;
 
 exports[`Iterator Two players 62`] = `
-"← NaN
+"← –
 → 0.2667
-↑ NaN
+↑ –
 ↓ 0.2667"
 `;
 
 exports[`Iterator Two players 63`] = `
 "← NaN
-→ 0.7500
+→ NaN
 ↑ NaN
-↓ 0.7500"
+↓ NaN"
 `;

@@ -560,7 +560,7 @@ class Results {
                 ([dir, {sum, count}]) =>
                     dirToString[dir as Dir] +
                     ' ' +
-                    (sum / count).toPrecision(4),
+                    (count > 0 ? (sum / count).toPrecision(4) : '–'),
             )
             .join('\n');
     }
@@ -584,10 +584,10 @@ class Iterator {
     private startTs = 0n;
     private outOfTime = false;
 
-    private turns = -1;
-    private resultCount = 0;
-    private maxDepth = 0;
-    private depth = 0;
+    public turns = -1;
+    public resultCount = 0;
+    public maxDepth = 0;
+    public depth = 0;
     public iteration = 0;
     public iterationBudget = 0;
     private dir: Dir | null = null;
