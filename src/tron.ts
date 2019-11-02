@@ -150,9 +150,6 @@ class Player {
         this.pos = this.startPos = pos;
         this.trailLength = 1;
     }
-    isFirstTurn(): boolean {
-        return this.dir == null;
-    }
     private _assertAlive(): void {
         if (this.isDead) throw new Error('Player is dead');
     }
@@ -374,6 +371,14 @@ class Game {
         this.grid.cellAt(pos).markTrail(playerIdx, this.players);
     }
 
+    stepPlayerDir(playerIdx: number, dir: Dir): void {
+        const player = this.players[playerIdx];
+        player.dir = dir;
+        player.step();
+
+        this.grid.cellAt(player.pos).markTrail(playerIdx, this.players);
+    }
+
     stepFromInput(input: Input): void {
         const {myIdx, posList, startPosList} = input;
         if (this.players.length === 0) {
@@ -393,42 +398,20 @@ class Game {
         }
     }
 
-    tryStepForward(playerIdx: number): boolean {
-        const player = this.players[playerIdx];
-
-        player.step();
-
-        const cell = this.grid.getEmptyCellAt(player.pos, this.players);
-        if (!cell) {
-            player.stepBack();
-            return false;
-        }
-        cell.markTrail(playerIdx, this.players);
-        return true;
-    }
-
-    tryStepToSide(
+    checkStep(
         playerIdx: number,
         dir: Dir,
-        {checkCorners = false}: {checkCorners?: boolean},
+        {checkCorners = false}: {checkCorners?: boolean} = {},
     ): boolean {
         const player = this.players[playerIdx];
+        const pos = player.pos;
+        const nextPos = shift[dir](pos);
 
-        const prevDir = player.dir;
-        player.dir = dir;
-        player.step();
-
-        const cell = this.grid.getEmptyCellAt(player.pos, this.players);
-        if (
-            !cell ||
-            (checkCorners && !this._checkSideCorners(player.pos, dir))
-        ) {
-            player.stepBack();
-            player.dir = prevDir;
+        const cell = this.grid.getEmptyCellAt(nextPos, this.players);
+        if (!cell || (checkCorners && !this._checkSideCorners(nextPos, dir))) {
             return false;
         }
 
-        cell.markTrail(playerIdx, this.players);
         return true;
     }
 
@@ -737,15 +720,12 @@ class Iterator {
         this.iteration++;
         this.iterationBudget--;
 
-        if (player.isFirstTurn()) {
+        if (player.dir == null) {
             dirs.forEach(dir => {
-                if (
-                    !this.game.tryStepToSide(playerIdx, dir, {
-                        checkCorners: false,
-                    })
-                ) {
+                if (!this.game.checkStep(playerIdx, dir)) {
                     return;
                 }
+                this.game.stepPlayerDir(playerIdx, dir);
                 madeAStep = true;
                 this.beforeSpend(dir[0]);
                 this.iteratePlayer(playerIdx + 1);
@@ -753,7 +733,8 @@ class Iterator {
                 this.game.stepBack(playerIdx);
             });
         } else {
-            if (this.game.tryStepForward(playerIdx)) {
+            if (this.game.checkStep(playerIdx, player.dir)) {
+                this.game.stepPlayerDir(playerIdx, player.dir);
                 madeAStep = true;
                 this.beforeSpend('f');
                 this.iteratePlayer(playerIdx + 1);
@@ -766,9 +747,10 @@ class Iterator {
             const checkCorners = !nearEnemy && madeAStep;
 
             player.getSideDirs().forEach((dir, i) => {
-                if (!this.game.tryStepToSide(playerIdx, dir, {checkCorners})) {
+                if (!this.game.checkStep(playerIdx, dir, {checkCorners})) {
                     return;
                 }
+                this.game.stepPlayerDir(playerIdx, dir);
                 madeAStep = true;
                 this.beforeSpend('s' + (i + 1));
                 this.iteratePlayer(playerIdx + 1);
