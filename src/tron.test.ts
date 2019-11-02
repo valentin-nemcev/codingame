@@ -133,11 +133,12 @@ describe('Iterator', () => {
     });
 
     test('Two players', () => {
-        const game = new Game({grid: {width: 5, height: 5}});
-        game.addPlayer({x: 2, y: 2});
-        game.addPlayer({x: 4, y: 4});
+        const game = new Game({grid: {width: 15, height: 10}});
+        game.addPlayer({x: 7, y: 5});
+        game.addPlayer({x: 0, y: 0});
+        game.stepPlayer(1, {x: 1, y: 0});
 
-        game.iterator.startTurn({iterationBudget: 2000});
+        game.iterator.startTurn({iterationBudget: 100_000});
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         game.iterator.results.onResult = (score): void => {
@@ -151,7 +152,7 @@ describe('Iterator', () => {
         };
         game.iterator.iteratePlayer(0);
         console.log(game.iterator.iteration);
-        console.log(game.iterator.resultCount);
+        console.log(game.iterator.results.toString());
 
         expect(game.iterator.results.toString()).toMatchSnapshot();
     });

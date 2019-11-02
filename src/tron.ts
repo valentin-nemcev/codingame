@@ -560,7 +560,9 @@ class Results {
                 ([dir, {sum, count}]) =>
                     dirToString[dir as Dir] +
                     ' ' +
-                    (count > 0 ? (sum / count).toPrecision(4) : '–'),
+                    (count > 0 ? (sum / count).toFixed(4) : '–').padStart(6) +
+                    ' ' +
+                    String(count).padStart(8),
             )
             .join('\n');
     }
@@ -724,7 +726,7 @@ class Iterator {
         }
 
         const player = this.game.players[playerIdx];
-        if (player.isDead) {
+        if (player.isDead || this.game.hasEnded()) {
             this.iteratePlayer(playerIdx + 1);
             return;
         }
