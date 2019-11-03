@@ -109,7 +109,7 @@ describe('Iterator', () => {
         game.iterator.results.onResult = (): void => {
             expect(game.toString()).toMatchSnapshot();
         };
-        game.iterator.iteratePlayer(0);
+        game.iterator.findBestDir();
 
         expect(game.toString()).toMatchSnapshot();
     });
@@ -126,13 +126,13 @@ describe('Iterator', () => {
             expect(score).toMatchSnapshot();
             expect(game.toString()).toMatchSnapshot();
         };
-        game.iterator.iteratePlayer(0);
+        game.iterator.findBestDir();
 
         expect(game.toString()).toMatchSnapshot();
         expect(game.iterator.results.toString()).toMatchSnapshot();
     });
 
-    test('Two players', () => {
+    test('Two players, larger grid', () => {
         const game = new Game({grid: {width: 15, height: 10}});
         game.addPlayer({x: 7, y: 5});
         game.addPlayer({x: 0, y: 0});
@@ -150,7 +150,7 @@ describe('Iterator', () => {
             // expect(score).toMatchSnapshot();
             // expect(game.toString()).toMatchSnapshot();
         };
-        game.iterator.iteratePlayer(0);
+        game.iterator.findBestDir();
         console.log(game.iterator.iteration);
         console.log(game.iterator.results.toString());
 

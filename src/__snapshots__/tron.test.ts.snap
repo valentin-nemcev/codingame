@@ -694,9 +694,9 @@ exports[`Iterator Two players 46`] = `
 ↓ 0.3636       11"
 `;
 
-exports[`Iterator Two players 47`] = `
-"← 0.8126     2567
-→ 0.7141     1914
-↑ 0.0040     2867
-↓ 0.0214     3868"
+exports[`Iterator Two players, larger grid 1`] = `
+"← 0.5195    13133
+→ 0.7007        1
+↑ 0.7415        1
+↓ 0.7347        1"
 `;

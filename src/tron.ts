@@ -1,3 +1,4 @@
+import assert from 'assert';
 declare const readline: () => string;
 
 function last<T>(a: T[]): T | undefined {
@@ -186,6 +187,8 @@ class Cell {
     dir: null | Dir = null;
     private deadTrails: {dir: Dir | null; trailOf: number}[] = [];
 
+    availableDirs: Dir[] = [];
+
     distanceTo = -1;
     distance = -1;
     floodfillCounter = 0;
@@ -362,6 +365,11 @@ class Game {
         return closestDist;
     }
 
+    resetTurn(playerIdx: number): void {
+        this.currentPlayerIdx = playerIdx;
+        this.currentPos = this.players[this.currentPlayerIdx].pos;
+    }
+
     nextTurn(): void {
         if (this.currentPlayerIdx !== this.players.length) {
             throw new Error(
@@ -369,6 +377,7 @@ class Game {
             );
         }
         this.currentPlayerIdx = 0;
+        this.currentPos = this.players[this.currentPlayerIdx].pos;
     }
 
     prevTurn(): void {
@@ -382,21 +391,50 @@ class Game {
 
     nextPlayer(): void {
         this.currentPlayerIdx++;
+        if (this.currentPlayerIdx < this.players.length) {
+            this.currentPos = this.players[this.currentPlayerIdx].pos;
+        }
     }
 
     prevPlayer(): void {
         this.currentPlayerIdx =
             (this.players.length + this.currentPlayerIdx - 1) %
             this.players.length;
+        this.currentPos = this.players[this.currentPlayerIdx].pos;
     }
 
     turnEnded(): boolean {
-        return this.currentPlayerIdx >= this.players.length;
+        return (
+            this.currentPlayerIdx >= this.players.length ||
+            this.currentPlayerIdx < 0
+        );
+    }
+
+    hasAvailableDirs(): boolean {
+        return this.grid.cellAt(this.currentPos).availableDirs.length > 0;
+    }
+
+    setAvailableDirs(dirs: Dir[]): void {
+        assert.strictEqual(
+            this.grid.cellAt(this.currentPos).availableDirs.length,
+            0,
+
+            'Iteration: ' +
+                this.iterator.iteration +
+                ' Pos: ' +
+                posToString(this.currentPos) +
+                ' Dirs: ' +
+                this.grid.cellAt(this.currentPos).availableDirs.join(', '),
+        );
+        this.grid.cellAt(this.currentPos).availableDirs = dirs;
+    }
+
+    getNextDir(): Dir | undefined {
+        return this.grid.cellAt(this.currentPos).availableDirs.shift();
     }
 
     addPlayer(pos: Pos): void {
         this.players.push(new Player(pos));
-        this.currentPos = pos;
         this.grid.cellAt(pos).markTrail(this.players.length - 1, this.players);
     }
 
@@ -404,7 +442,6 @@ class Game {
         if (isPosUnset(pos)) return;
         const player = this.players[playerIdx];
         player.stepToPos(pos);
-        this.currentPos = pos;
         this.grid.cellAt(pos).markTrail(playerIdx, this.players);
     }
 
@@ -414,7 +451,6 @@ class Game {
         player.dir = dir;
         player.step();
 
-        this.currentPos = player.pos;
         this.grid.cellAt(player.pos).markTrail(playerIdx, this.players);
         this.nextPlayer();
     }
@@ -759,53 +795,39 @@ class Iterator {
             return;
         }
 
-        let madeAStep = false;
-
-        this.allocateBudget();
         this.iteration++;
         this.iterationBudget--;
 
+        const {currentPos} = this.game;
+        assert.deepEqual(currentPos, player.pos);
         if (player.dir == null) {
-            dirs.forEach(dir => {
-                if (!this.game.checkStep(dir)) {
-                    return;
-                }
-                this.game.stepPlayerDir(dir);
-                madeAStep = true;
-                this.beforeSpend(dir[0]);
-                this.iteratePlayer();
-                this.afterSpend(dir[0]);
-                this.game.stepBack();
-            });
+            this.game.setAvailableDirs(
+                dirs.filter(dir => this.game.checkStep(dir)),
+            );
         } else {
-            if (this.game.checkStep(player.dir)) {
-                this.game.stepPlayerDir(player.dir);
-                madeAStep = true;
-                this.beforeSpend('f');
-                this.iteratePlayer();
-                this.afterSpend('f');
-                this.game.stepBack();
-            }
-
+            const checkForward = this.game.checkStep(player.dir);
             const nearEnemy =
                 this.depth < 10 && this.game.distToClosestPlayer() < 3;
-            const checkCorners = !nearEnemy && madeAStep;
+            const checkCorners = !nearEnemy && checkForward;
 
-            player.getSideDirs().forEach((dir, i) => {
-                if (!this.game.checkStep(dir, {checkCorners})) {
-                    return;
-                }
-                this.game.stepPlayerDir(dir);
-                madeAStep = true;
-                this.beforeSpend('s' + (i + 1));
-                this.iteratePlayer();
-                this.afterSpend('s' + (i + 1));
-                this.game.stepBack();
-            });
+            this.game.setAvailableDirs([
+                ...(checkForward ? [player.dir] : []),
+                ...player
+                    .getSideDirs()
+                    .filter(dir => this.game.checkStep(dir, {checkCorners})),
+            ]);
         }
-        this.deallocateBudget();
 
-        if (madeAStep) {
+        if (this.game.hasAvailableDirs()) {
+            let dir: Dir | undefined;
+            while ((dir = this.game.getNextDir())) {
+                this.game.stepPlayerDir(dir);
+                this.iteratePlayer();
+                this.game.stepBack();
+                assert.deepEqual(currentPos, this.game.currentPos);
+            }
+            assert.strictEqual(this.game.getNextDir(), undefined);
+
             return;
         }
 
@@ -836,6 +858,77 @@ class Iterator {
         this.depth--;
     }
 
+    _shouldBreak(): boolean {
+        return (
+            this.game.players[0].isDead ||
+            this.iterationBudget < 0 ||
+            !this.hasTimeLeft() ||
+            this.game.hasEnded()
+        );
+    }
+
+    iterate(): void {
+        let forward = true;
+        for (;;) {
+            const player = this.game.players[this.game.currentPlayerIdx];
+
+            if (this.game.turnEnded()) {
+                if (forward) {
+                    if (this.depth === 0) {
+                        this.dir = this.game.players[0].dir;
+                    }
+                    if (this._shouldBreak()) {
+                        this.addResult();
+                        forward = false;
+                        continue;
+                    }
+                    this.depth++;
+                    this.game.nextTurn();
+                    continue;
+                } else {
+                    this.game.prevTurn();
+                    this.depth--;
+                }
+            }
+
+            if (player.isDead || this.game.hasEnded()) {
+                if (forward) this.game.nextPlayer();
+                else this.game.prevPlayer();
+                continue;
+            }
+
+            if (forward) {
+                this.iteration++;
+                this.iterationBudget--;
+            }
+
+            if (forward) {
+                if (!this.game.hasAvailableDirs()) {
+                    if (player.dir == null) {
+                        this.game.setAvailableDirs(
+                            dirs.filter(dir => this.game.checkStep(dir)),
+                        );
+                        dirs.forEach(dir => {
+                            if (!this.game.checkStep(dir)) {
+                                return;
+                            }
+                            assert.strictEqual(this.game.getNextDir(), dir);
+                            this.game.stepPlayerDir(dir);
+                            this.iteratePlayer();
+                            this.game.stepBack();
+                        });
+                        assert.strictEqual(this.game.getNextDir(), undefined);
+                    }
+                }
+                const dir = this.game.getNextDir();
+                if (dir) {
+                    this.game.stepPlayerDir(dir);
+                    continue;
+                }
+            }
+        }
+    }
+
     addResult(): void {
         if (!this.dir) throw new Error('Early addResult');
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
@@ -847,6 +940,7 @@ class Iterator {
     }
 
     findBestDir(): Dir | null {
+        this.game.resetTurn(0);
         this.iteratePlayer();
 
         this.printTurnStats();
