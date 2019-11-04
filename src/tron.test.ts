@@ -138,7 +138,7 @@ describe('Iterator', () => {
         game.addPlayer({x: 0, y: 0});
         game.stepPlayer(1, {x: 1, y: 0});
 
-        game.iterator.startTurn({iterationBudget: 100_000});
+        game.iterator.startTurn({timeBudget: 150});
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         game.iterator.results.onResult = (score): void => {
@@ -151,9 +151,8 @@ describe('Iterator', () => {
             // expect(game.toString()).toMatchSnapshot();
         };
         game.iterator.findBestDir();
-        console.log(game.iterator.iteration);
         console.log(game.iterator.results.toString());
 
-        expect(game.iterator.results.toString()).toMatchSnapshot();
+        // expect(game.iterator.results.toString()).toMatchSnapshot();
     });
 });
