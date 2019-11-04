@@ -1,4 +1,3 @@
-import assert from 'assert';
 declare const readline: () => string;
 
 function last<T>(a: T[]): T | undefined {
@@ -323,9 +322,6 @@ class Game {
     public readonly iterator: Iterator;
     players: Player[] = [];
 
-    public currentPos: Pos = {x: -1, y: -1};
-    public currentPlayerIdx = 0;
-
     constructor({log, grid}: {log?: Log; grid?: GridParams} = {}) {
         this.grid = new Grid(grid);
         this.iterator = new Iterator(this, log); //eslint-disable-line @typescript-eslint/no-use-before-define
@@ -365,74 +361,6 @@ class Game {
         return closestDist;
     }
 
-    resetTurn(playerIdx: number): void {
-        this.currentPlayerIdx = playerIdx;
-        this.currentPos = this.players[this.currentPlayerIdx].pos;
-    }
-
-    nextTurn(): void {
-        if (this.currentPlayerIdx !== this.players.length) {
-            throw new Error(
-                `Invalid next turn: ${this.currentPlayerIdx}/${this.players.length}`,
-            );
-        }
-        this.currentPlayerIdx = 0;
-        this.currentPos = this.players[this.currentPlayerIdx].pos;
-    }
-
-    prevTurn(): void {
-        if (this.currentPlayerIdx !== 0) {
-            throw new Error(
-                `Invalid prev turn: ${this.currentPlayerIdx}/${this.players.length}`,
-            );
-        }
-        this.currentPlayerIdx = this.players.length;
-    }
-
-    nextPlayer(): void {
-        this.currentPlayerIdx++;
-        if (this.currentPlayerIdx < this.players.length) {
-            this.currentPos = this.players[this.currentPlayerIdx].pos;
-        }
-    }
-
-    prevPlayer(): void {
-        this.currentPlayerIdx =
-            (this.players.length + this.currentPlayerIdx - 1) %
-            this.players.length;
-        this.currentPos = this.players[this.currentPlayerIdx].pos;
-    }
-
-    turnEnded(): boolean {
-        return (
-            this.currentPlayerIdx >= this.players.length ||
-            this.currentPlayerIdx < 0
-        );
-    }
-
-    hasAvailableDirs(): boolean {
-        return this.grid.cellAt(this.currentPos).availableDirs.length > 0;
-    }
-
-    setAvailableDirs(dirs: Dir[]): void {
-        assert.strictEqual(
-            this.grid.cellAt(this.currentPos).availableDirs.length,
-            0,
-
-            'Iteration: ' +
-                this.iterator.iteration +
-                ' Pos: ' +
-                posToString(this.currentPos) +
-                ' Dirs: ' +
-                this.grid.cellAt(this.currentPos).availableDirs.join(', '),
-        );
-        this.grid.cellAt(this.currentPos).availableDirs = dirs;
-    }
-
-    getNextDir(): Dir | undefined {
-        return this.grid.cellAt(this.currentPos).availableDirs.shift();
-    }
-
     addPlayer(pos: Pos): void {
         this.players.push(new Player(pos));
         this.grid.cellAt(pos).markTrail(this.players.length - 1, this.players);
@@ -445,14 +373,12 @@ class Game {
         this.grid.cellAt(pos).markTrail(playerIdx, this.players);
     }
 
-    stepPlayerDir(dir: Dir): void {
-        const playerIdx = this.currentPlayerIdx;
+    stepPlayerDir(playerIdx: number, dir: Dir): void {
         const player = this.players[playerIdx];
         player.dir = dir;
         player.step();
 
         this.grid.cellAt(player.pos).markTrail(playerIdx, this.players);
-        this.nextPlayer();
     }
 
     stepFromInput(input: Input): void {
@@ -475,10 +401,10 @@ class Game {
     }
 
     checkStep(
+        playerIdx: number,
         dir: Dir,
         {checkCorners = false}: {checkCorners?: boolean} = {},
     ): boolean {
-        const playerIdx = this.currentPlayerIdx;
         const player = this.players[playerIdx];
         const pos = player.pos;
         const nextPos = shift[dir](pos);
@@ -503,14 +429,11 @@ class Game {
         return false;
     }
 
-    stepBack(): void {
-        this.prevPlayer();
-        const playerIdx = this.currentPlayerIdx;
+    stepBack(playerIdx: number): void {
         const player = this.players[playerIdx];
         const cell = this.grid.cellAt(player.pos);
         cell.unmarkTrail();
         player.stepBack();
-        this.currentPos = player.pos;
         player.dir = this.grid.cellAt(player.pos).dir;
     }
 
@@ -781,60 +704,54 @@ class Iterator {
         budget.iteration = this.iteration;
     }
 
-    iteratePlayer(): void {
-        if (this.game.turnEnded()) {
+    iteratePlayer(playerIdx: number): void {
+        if (playerIdx >= this.game.players.length) {
             this.iterateTurn();
             return;
         }
 
-        const player = this.game.players[this.game.currentPlayerIdx];
+        const player = this.game.players[playerIdx];
         if (player.isDead || this.game.hasEnded()) {
-            this.game.nextPlayer();
-            this.iteratePlayer();
-            this.game.prevPlayer();
+            this.iteratePlayer(playerIdx + 1);
             return;
         }
 
         this.iteration++;
         this.iterationBudget--;
 
-        const {currentPos} = this.game;
-        assert.deepEqual(currentPos, player.pos);
+        let availableDirs: Dir[];
         if (player.dir == null) {
-            this.game.setAvailableDirs(
-                dirs.filter(dir => this.game.checkStep(dir)),
+            availableDirs = dirs.filter(dir =>
+                this.game.checkStep(playerIdx, dir),
             );
         } else {
-            const checkForward = this.game.checkStep(player.dir);
+            const checkForward = this.game.checkStep(playerIdx, player.dir);
             const nearEnemy =
                 this.depth < 10 && this.game.distToClosestPlayer() < 3;
             const checkCorners = !nearEnemy && checkForward;
 
-            this.game.setAvailableDirs([
+            availableDirs = [
                 ...(checkForward ? [player.dir] : []),
                 ...player
                     .getSideDirs()
-                    .filter(dir => this.game.checkStep(dir, {checkCorners})),
-            ]);
+                    .filter(dir =>
+                        this.game.checkStep(playerIdx, dir, {checkCorners}),
+                    ),
+            ];
         }
 
-        if (this.game.hasAvailableDirs()) {
-            let dir: Dir | undefined;
-            while ((dir = this.game.getNextDir())) {
-                this.game.stepPlayerDir(dir);
-                this.iteratePlayer();
-                this.game.stepBack();
-                assert.deepEqual(currentPos, this.game.currentPos);
-            }
-            assert.strictEqual(this.game.getNextDir(), undefined);
+        if (availableDirs.length > 0) {
+            availableDirs.forEach(dir => {
+                this.game.stepPlayerDir(playerIdx, dir);
+                this.iteratePlayer(playerIdx + 1);
+                this.game.stepBack(playerIdx);
+            });
 
             return;
         }
 
         player.isDead = true;
-        this.game.nextPlayer();
-        this.iteratePlayer();
-        this.game.prevPlayer();
+        this.iteratePlayer(playerIdx + 1);
         player.isDead = false;
     }
 
@@ -852,9 +769,7 @@ class Iterator {
         }
 
         this.depth++;
-        this.game.nextTurn();
-        this.iteratePlayer();
-        this.game.prevTurn();
+        this.iteratePlayer(0);
         this.depth--;
     }
 
@@ -865,68 +780,6 @@ class Iterator {
             !this.hasTimeLeft() ||
             this.game.hasEnded()
         );
-    }
-
-    iterate(): void {
-        let forward = true;
-        for (;;) {
-            const player = this.game.players[this.game.currentPlayerIdx];
-
-            if (this.game.turnEnded()) {
-                if (forward) {
-                    if (this.depth === 0) {
-                        this.dir = this.game.players[0].dir;
-                    }
-                    if (this._shouldBreak()) {
-                        this.addResult();
-                        forward = false;
-                        continue;
-                    }
-                    this.depth++;
-                    this.game.nextTurn();
-                    continue;
-                } else {
-                    this.game.prevTurn();
-                    this.depth--;
-                }
-            }
-
-            if (player.isDead || this.game.hasEnded()) {
-                if (forward) this.game.nextPlayer();
-                else this.game.prevPlayer();
-                continue;
-            }
-
-            if (forward) {
-                this.iteration++;
-                this.iterationBudget--;
-            }
-
-            if (forward) {
-                if (!this.game.hasAvailableDirs()) {
-                    if (player.dir == null) {
-                        this.game.setAvailableDirs(
-                            dirs.filter(dir => this.game.checkStep(dir)),
-                        );
-                        dirs.forEach(dir => {
-                            if (!this.game.checkStep(dir)) {
-                                return;
-                            }
-                            assert.strictEqual(this.game.getNextDir(), dir);
-                            this.game.stepPlayerDir(dir);
-                            this.iteratePlayer();
-                            this.game.stepBack();
-                        });
-                        assert.strictEqual(this.game.getNextDir(), undefined);
-                    }
-                }
-                const dir = this.game.getNextDir();
-                if (dir) {
-                    this.game.stepPlayerDir(dir);
-                    continue;
-                }
-            }
-        }
     }
 
     addResult(): void {
@@ -940,8 +793,7 @@ class Iterator {
     }
 
     findBestDir(): Dir | null {
-        this.game.resetTurn(0);
-        this.iteratePlayer();
+        this.iteratePlayer(0);
 
         this.printTurnStats();
         return this.results.getDir();
