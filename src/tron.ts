@@ -32,8 +32,8 @@ const TRAIL_CHARS: {[key: string]: string} = {
 
     STARTLEFT: '0 1 2 ',
     STARTRIGHT: '0━1═2─',
-    STARTUP: '0 1 2',
-    STARTDOWN: '0 1 2',
+    STARTUP: '0 1 2 ',
+    STARTDOWN: '0 1 2 ',
 
     LEFTLEFT: '━━══──',
     RIGHTRIGHT: '━━══──',
@@ -44,11 +44,11 @@ const TRAIL_CHARS: {[key: string]: string} = {
     LEFTDOWN: '┏━╔═┌─',
     UPRIGHT: '┏━╔═┌─',
 
-    RIGHTUP: '┛ ╝ ┘',
-    DOWNLEFT: '┛ ╝ ┘',
+    RIGHTUP: '┛ ╝ ┘ ',
+    DOWNLEFT: '┛ ╝ ┘ ',
 
-    RIGHTDOWN: '┓ ╗ ┐',
-    UPLEFT: '┓ ╗ ┐',
+    RIGHTDOWN: '┓ ╗ ┐ ',
+    UPLEFT: '┓ ╗ ┐ ',
 
     UPUP: '┃ ║ │ ',
     DOWNDOWN: '┃ ║ │ ',
@@ -516,7 +516,7 @@ class Results {
         let result: Dir | null = null;
         let maxScore = -Infinity;
         for (const [key, {sum, count}] of Object.entries(this.scores)) {
-            const score = count / sum;
+            const score = sum / count;
             if (score > maxScore) {
                 maxScore = score;
                 result = key as Dir;
@@ -602,9 +602,6 @@ class Iterator {
             return this.addResult();
         }
         if (playerIdx >= this.game.players.length) {
-            if (this.depth === 0) {
-                this.dir = this.game.players[0].dir;
-            }
             this.depth++;
             this.iterate(0, timeBudgetNs);
             this.depth--;
@@ -625,26 +622,29 @@ class Iterator {
                 this.game.checkStep(playerIdx, dir),
             );
         } else {
-            // availableDirs = [player.dir, ...player.getSideDirs()].filter(dir =>
-            //     this.game.checkStep(playerIdx, dir),
-            // );
-            const checkForward = this.game.checkStep(playerIdx, player.dir);
-            const nearEnemy =
-                this.depth < 10 && this.game.distToClosestPlayer() < 3;
-            const checkCorners = !nearEnemy && checkForward;
-
-            availableDirs = [
-                ...(checkForward ? [player.dir] : []),
-                ...player
-                    .getSideDirs()
-                    .filter(dir =>
-                        this.game.checkStep(playerIdx, dir, {checkCorners}),
-                    ),
-            ];
+            availableDirs = [player.dir, ...player.getSideDirs()].filter(dir =>
+                this.game.checkStep(playerIdx, dir),
+            );
+            // const checkForward = this.game.checkStep(playerIdx, player.dir);
+            // const nearEnemy =
+            //     this.depth < 10 && this.game.distToClosestPlayer() < 3;
+            // const checkCorners = !nearEnemy && checkForward;
+            //
+            // availableDirs = [
+            //     ...(checkForward ? [player.dir] : []),
+            //     ...player
+            //         .getSideDirs()
+            //         .filter(dir =>
+            //             this.game.checkStep(playerIdx, dir, {checkCorners}),
+            //         ),
+            // ];
         }
 
         if (availableDirs.length > 0) {
             availableDirs.forEach((dir, i) => {
+                if (this.depth === 0 && playerIdx === 0) {
+                    this.dir = dir;
+                }
                 const f = availableDirs.length - i;
                 this.game.stepPlayerDir(playerIdx, dir);
                 let startNs = 0n;
@@ -673,13 +673,14 @@ class Iterator {
     }
 
     addResult(): void {
-        if (!this.dir) throw new Error('Early addResult');
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
-        this.resultCount++;
-        this.results.add({
-            dir: this.dir,
-            scores: this.game.grid.floodfill(this.game.players),
-        });
+        if (this.dir) {
+            this.resultCount++;
+            this.results.add({
+                dir: this.dir,
+                scores: this.game.grid.floodfill(this.game.players),
+            });
+        }
     }
 
     findBestDir(): Dir | null {
@@ -709,6 +710,8 @@ function go(
         game.stepFromInput(input);
 
         const dir = game.iterator.findBestDir();
+
+        console.error(game.iterator.results.toString());
 
         writeline(dir || 'AAAAA!');
     }

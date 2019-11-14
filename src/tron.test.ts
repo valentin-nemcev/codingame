@@ -119,13 +119,17 @@ function sideBySide(...inputs: string[]): string {
 }
 
 function collectResults(game: Game): string {
-    const results: string[] = [];
+    const results: [string, string, string][] = [];
     // eslint-disable-next-line @typescript-eslint/unbound-method
     game.iterator.results.onResult = (score): void => {
-        results.push(sideBySide(game.toString(), score.toFixed(4)));
+        const i = results.length;
+        results.push([game.toString(), score.toFixed(4), '#' + i]);
     };
     game.iterator.findBestDir();
-    return results.sort().join('\n\n');
+    return results
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(ss => sideBySide(...ss))
+        .join('\n\n');
 }
 
 describe('Iterator', () => {
@@ -141,6 +145,18 @@ describe('Iterator', () => {
     test('Two players', () => {
         const game = new Game({grid: {width: 4, height: 4}});
         game.addPlayer({x: 0, y: 0});
+        game.addPlayer({x: 3, y: 3});
+
+        expect(collectResults(game)).toMatchSnapshot();
+
+        expect(game.toString()).toMatchSnapshot();
+        expect(game.iterator.results.toString()).toMatchSnapshot();
+    });
+
+    test('Three players', () => {
+        const game = new Game({grid: {width: 4, height: 4}});
+        game.addPlayer({x: 0, y: 0});
+        game.addPlayer({x: 0, y: 3});
         game.addPlayer({x: 3, y: 3});
 
         expect(collectResults(game)).toMatchSnapshot();
