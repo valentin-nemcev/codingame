@@ -100,16 +100,40 @@ describe('Flood fill', () => {
     });
 });
 
+function sideBySide(...inputs: string[]): string {
+    const inputLines = inputs.map(i => i.split('\n'));
+    const inputWidths = inputLines.map(ll =>
+        Math.max(0, ...ll.map(l => l.length)),
+    );
+    const outputLines: string[] = [];
+    const length = Math.max(...inputLines.map(l => l.length));
+    for (let i = 0; i < length; i++) {
+        outputLines.push(
+            inputLines
+                .map((ll, j) => (ll[i] || '').padEnd(inputWidths[j]))
+                .join('  '),
+        );
+    }
+
+    return outputLines.join('\n');
+}
+
+function collectResults(game: Game): string {
+    const results: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    game.iterator.results.onResult = (score): void => {
+        results.push(sideBySide(game.toString(), score.toFixed(4)));
+    };
+    game.iterator.findBestDir();
+    return results.sort().join('\n\n');
+}
+
 describe('Iterator', () => {
     test('Single player', () => {
         const game = new Game({grid: {width: 4, height: 4}});
         game.addPlayer({x: 0, y: 0});
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.results.onResult = (): void => {
-            expect(game.toString()).toMatchSnapshot();
-        };
-        game.iterator.findBestDir();
+        expect(collectResults(game)).toMatchSnapshot();
 
         expect(game.toString()).toMatchSnapshot();
     });
@@ -119,14 +143,7 @@ describe('Iterator', () => {
         game.addPlayer({x: 0, y: 0});
         game.addPlayer({x: 3, y: 3});
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.results.onResult = (score): void => {
-            // console.log(game.toString());
-            // console.log(score);
-            expect(score).toMatchSnapshot();
-            expect(game.toString()).toMatchSnapshot();
-        };
-        game.iterator.findBestDir();
+        expect(collectResults(game)).toMatchSnapshot();
 
         expect(game.toString()).toMatchSnapshot();
         expect(game.iterator.results.toString()).toMatchSnapshot();
@@ -151,8 +168,11 @@ describe('Iterator', () => {
             // expect(game.toString()).toMatchSnapshot();
         };
         game.iterator.findBestDir();
-        console.log(game.iterator.results.toString());
-
-        // expect(game.iterator.results.toString()).toMatchSnapshot();
+        const approxScores = Object.entries(game.iterator.results.scores).map(
+            ([dir, {sum, count}]) =>
+                dir + ': ' + Math.round((sum / count) * 10),
+        );
+        console.log(approxScores);
+        expect(approxScores).toMatchSnapshot();
     });
 });

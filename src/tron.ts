@@ -317,22 +317,11 @@ class Game {
     public readonly grid: Grid;
     public readonly iterator: Iterator;
     players: Player[] = [];
+    deadCount = 0;
 
     constructor({log, grid}: {log?: Log; grid?: GridParams} = {}) {
         this.grid = new Grid(grid);
         this.iterator = new Iterator(this, log); //eslint-disable-line @typescript-eslint/no-use-before-define
-    }
-
-    hasEnded(): boolean {
-        if (this.players.length > 1) {
-            const alive = this.players.reduce(
-                (c, player) => c + Number(!player.isDead),
-                0,
-            );
-            return alive <= 1;
-        } else {
-            return this.getEmptyCount() === 0;
-        }
     }
 
     getEmptyCount(): number {
@@ -355,6 +344,16 @@ class Game {
             if (dist < closestDist) closestDist = dist;
         });
         return closestDist;
+    }
+
+    markPlayerDead(playerIdx: number): void {
+        this.players[playerIdx].isDead = true;
+        this.deadCount++;
+    }
+
+    unmarkPlayerDead(playerIdx: number): void {
+        this.players[playerIdx].isDead = false;
+        this.deadCount--;
     }
 
     addPlayer(pos: Pos): void {
@@ -559,7 +558,6 @@ class Iterator {
 
     private timeBudget = Number.MAX_SAFE_INTEGER;
     private startTs = 0n;
-    private outOfTime = false;
 
     public turns = -1;
     public resultCount = 0;
@@ -569,10 +567,9 @@ class Iterator {
     private dir: Dir | null = null;
     public readonly results: Results;
 
-    startTurn({timeBudget = Infinity} = {}): void {
+    startTurn({timeBudget = Number.MAX_SAFE_INTEGER} = {}): void {
         this.timeBudget = timeBudget;
         this.startTs = process.hrtime.bigint();
-        this.outOfTime = false;
         this.depth = 0;
         this.dir = null;
         this.results.reset();
@@ -600,45 +597,23 @@ class Iterator {
         );
     }
 
-    hasTimeLeft(): boolean {
-        let ms;
-        if (!this.outOfTime && (ms = this.getTimeSpent()) > this.timeBudget) {
-            this.outOfTime = true;
-            this.log(
-                `Out of time at ${this.depth}/${this.maxDepth}, iter# ${
-                    this.iteration
-                }: ${ms.toPrecision(3)}ms`,
-            );
+    iterate(playerIdx: number, timeBudgetNs: bigint): void {
+        if (timeBudgetNs <= 0n) {
+            return this.addResult();
         }
-        return !this.outOfTime;
-    }
-
-    _shouldStopIteration(): boolean {
-        return (
-            this.game.players[0].isDead ||
-            !this.hasTimeLeft() ||
-            this.game.hasEnded()
-        );
-    }
-
-    iterate(playerIdx: number): void {
         if (playerIdx >= this.game.players.length) {
             if (this.depth === 0) {
                 this.dir = this.game.players[0].dir;
             }
-            if (this._shouldStopIteration()) {
-                return this.addResult();
-            }
-
             this.depth++;
-            this.iterate(0);
+            this.iterate(0, timeBudgetNs);
             this.depth--;
             return;
         }
 
         const player = this.game.players[playerIdx];
-        if (player.isDead || this.game.hasEnded()) {
-            this.iterate(playerIdx + 1);
+        if (player.isDead) {
+            this.iterate(playerIdx + 1, timeBudgetNs);
             return;
         }
 
@@ -650,6 +625,9 @@ class Iterator {
                 this.game.checkStep(playerIdx, dir),
             );
         } else {
+            // availableDirs = [player.dir, ...player.getSideDirs()].filter(dir =>
+            //     this.game.checkStep(playerIdx, dir),
+            // );
             const checkForward = this.game.checkStep(playerIdx, player.dir);
             const nearEnemy =
                 this.depth < 10 && this.game.distToClosestPlayer() < 3;
@@ -666,15 +644,31 @@ class Iterator {
         }
 
         if (availableDirs.length > 0) {
-            availableDirs.forEach(dir => {
+            availableDirs.forEach((dir, i) => {
+                const f = availableDirs.length - i;
                 this.game.stepPlayerDir(playerIdx, dir);
-                this.iterate(playerIdx + 1);
+                let startNs = 0n;
+                startNs = process.hrtime.bigint();
+                this.iterate(playerIdx + 1, timeBudgetNs / BigInt(f));
+                timeBudgetNs -= process.hrtime.bigint() - startNs;
                 this.game.stepBack(playerIdx);
             });
         } else {
-            player.isDead = true;
-            this.iterate(playerIdx + 1);
-            player.isDead = false;
+            this.game.markPlayerDead(playerIdx);
+            const players = this.game.players.length;
+            const alive = players - this.game.deadCount;
+            if (players > 1 && alive === 1) {
+                this.addResult();
+                this.game.unmarkPlayerDead(playerIdx);
+                return;
+            } else if (players === 1 && alive === 0) {
+                this.game.unmarkPlayerDead(playerIdx);
+                this.addResult();
+                return;
+            } else {
+                this.iterate(playerIdx + 1, timeBudgetNs);
+            }
+            this.game.unmarkPlayerDead(playerIdx);
         }
     }
 
@@ -689,14 +683,18 @@ class Iterator {
     }
 
     findBestDir(): Dir | null {
-        this.iterate(0);
+        this.iterate(
+            0,
+            BigInt(this.timeBudget) * 1_000_000n -
+                (process.hrtime.bigint() - this.startTs),
+        );
 
         this.printTurnStats();
         return this.results.getDir();
     }
 }
 
-const timeBudget = 95;
+const timeBudget = 90;
 
 function go(
     game: Game,

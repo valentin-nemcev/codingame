@@ -3,7 +3,7 @@ import {Game} from './tron';
 const log = console.error.bind(console);
 const game = new Game({log});
 
-game.iterator.startTurn({iterationBudget: 1_000_000});
+game.iterator.startTurn({timeBudget: 1_000});
 
 const pos = [{x: 15, y: 10}, {x: 0, y: 0}];
 game.stepFromInput({
@@ -16,4 +16,3 @@ console.log(game.toString());
 
 game.iterator.findBestDir();
 console.log(game.iterator.results.toString());
-console.table(game.iterator.getActualBudgetAllocationTable());
