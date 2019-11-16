@@ -1,3 +1,5 @@
+// import v8 from 'v8';
+
 declare const readline: () => string;
 
 function sum(arr: number[]): number {
@@ -238,7 +240,9 @@ class Grid {
     public readonly size: number;
 
     public readonly grid: Cell[] = [];
+
     public floodfillCounter = 0;
+    public floodfillQueue: Pos[] = [];
 
     constructor({width = 30, height = 20}: GridParams = {}) {
         this.width = width;
@@ -247,6 +251,8 @@ class Grid {
         for (let i = 0; i < this.size; i++) {
             this.grid.push(new Cell());
         }
+
+        this.floodfillQueue.length = this.size;
     }
 
     isPosOnGrid({x, y}: Pos): boolean {
@@ -272,31 +278,36 @@ class Grid {
 
     floodfill(players: Player[]): number[] {
         this.floodfillCounter++;
-        const queue: Pos[] = [];
+        let begin = 0;
+        let end = 0;
+        const queue = this.floodfillQueue;
         const result = players.map(() => 0);
         players.forEach((p, i) => {
             if (p.isDead) return;
             result[i]++;
             const cell = this.cellAt(p.pos);
             cell.markDistance(i, 0, this.floodfillCounter);
-            queue.push(p.pos);
+            queue[end++] = p.pos;
         });
         for (;;) {
-            const pos = queue.shift();
-            if (!pos) break;
+            if (begin >= end) break;
+            const pos = queue[begin++];
             const cell = this.cellAt(pos);
-            dirs.forEach(dir => {
+            for (let i = 0; i < dirs.length; i++) {
+                const dir = dirs[i];
                 const p = shift[dir](pos);
                 const c = this.getEmptyCellAt(p, players);
-                if (!c || c.floodfillCounter === this.floodfillCounter) return;
+                if (!c || c.floodfillCounter === this.floodfillCounter) {
+                    continue;
+                }
                 c.markDistance(
                     cell.distanceTo,
                     cell.distance + 1,
                     this.floodfillCounter,
                 );
                 result[cell.distanceTo]++;
-                queue.push(p);
-            });
+                queue[end++] = p;
+            }
         }
 
         return result;
@@ -362,8 +373,11 @@ class Game {
     }
 
     stepPlayer(playerIdx: number, pos: Pos): void {
-        if (isPosUnset(pos)) return;
         const player = this.players[playerIdx];
+        if (isPosUnset(pos)) {
+            if (!player.isDead) this.markPlayerDead(playerIdx);
+            return;
+        }
         player.stepToPos(pos);
         this.grid.cellAt(pos).markTrail(playerIdx, this.players);
     }
@@ -586,14 +600,24 @@ class Iterator {
     printTurnStats(): void {
         const ms = this.getTimeSpent();
         this.log(
-            'Turn %d: %s ms, %d i/ms, %d/%d depth, %d results, %d iterations',
+            'Turn %d: %s ms, %d i/ms, %d depth, %d results, %d iterations',
             this.turns,
             ms.toFixed(0),
             Math.round(this.iteration / ms),
-            this.depth,
             this.maxDepth,
             this.resultCount,
             this.iteration,
+        );
+        const {rss, heapTotal, heapUsed} = process.memoryUsage();
+        const {user, system} = process.cpuUsage();
+        const toMb = (b: number): number => b / (1024 * 1024);
+        this.log(
+            'Memory: rss %s mb, heap %s/%s mb\nCpu: user %d ms, system %d ms',
+            toMb(rss).toFixed(1),
+            toMb(heapUsed).toFixed(1),
+            toMb(heapTotal).toFixed(1),
+            Math.round(user / 1000),
+            Math.round(system / 1000),
         );
     }
 
@@ -641,7 +665,8 @@ class Iterator {
         }
 
         if (availableDirs.length > 0) {
-            availableDirs.forEach((dir, i) => {
+            for (let i = 0; i < availableDirs.length; i++) {
+                const dir = availableDirs[i];
                 if (this.depth === 0 && playerIdx === 0) {
                     this.dir = dir;
                 }
@@ -652,7 +677,7 @@ class Iterator {
                 this.iterate(playerIdx + 1, timeBudgetNs / BigInt(f));
                 timeBudgetNs -= process.hrtime.bigint() - startNs;
                 this.game.stepBack(playerIdx);
-            });
+            }
         } else {
             this.game.markPlayerDead(playerIdx);
             const players = this.game.players.length;
@@ -702,6 +727,9 @@ function go(
     readline: () => string,
     writeline: (s: string) => void,
 ): void {
+    console.error(process.env);
+    console.error(process.version);
+    console.error(process.execArgv);
     for (let turn = 0; ; turn++) {
         const input = readState(readline);
         if (input == null) break;
@@ -711,7 +739,7 @@ function go(
 
         const dir = game.iterator.findBestDir();
 
-        console.error(game.iterator.results.toString());
+        // console.error(game.iterator.results.toString());
 
         writeline(dir || 'AAAAA!');
     }

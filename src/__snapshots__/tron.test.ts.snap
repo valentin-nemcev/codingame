@@ -99,6 +99,76 @@ exports[`Flood fill Sample input 3 2`] = `
 66/600"
 `;
 
+exports[`Game Dead player 1`] = `
+"┌╴
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                            ▲
+                                                            1
+                                                             
+                                                             
+                                  0                          
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             
+                                                             ╶┘
+3/600"
+`;
+
+exports[`Game Dead player 2`] = `
+Array [
+  Player {
+    "dir": null,
+    "isDead": false,
+    "pos": Object {
+      "x": 16,
+      "y": 12,
+    },
+    "startPos": Object {
+      "x": 16,
+      "y": 12,
+    },
+    "trailLength": 1,
+  },
+  Player {
+    "dir": "UP",
+    "isDead": false,
+    "pos": Object {
+      "x": 29,
+      "y": 8,
+    },
+    "startPos": Object {
+      "x": 29,
+      "y": 9,
+    },
+    "trailLength": 2,
+  },
+  Player {
+    "dir": null,
+    "isDead": true,
+    "pos": Object {
+      "x": 10,
+      "y": 1,
+    },
+    "startPos": Object {
+      "x": 10,
+      "y": 1,
+    },
+    "trailLength": 1,
+  },
+]
+`;
+
 exports[`Game Sample input 1`] = `
 "┌╴
   ┏━━━━━━━┓ ◄═══════════════════════════════════════════════╗

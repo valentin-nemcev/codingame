@@ -48,6 +48,17 @@ describe('Game', () => {
         });
         expect(game.toString()).toMatchSnapshot();
     });
+
+    test('Dead player', () => {
+        const game = new Game();
+        game.stepFromInput({
+            myIdx: 2,
+            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}, {x: 16, y: 12}],
+            posList: [{x: 29, y: 8}, {x: -1, y: -1}, {x: 16, y: 12}],
+        });
+        expect(game.toString()).toMatchSnapshot();
+        expect(game.players).toMatchSnapshot();
+    });
 });
 
 describe('Flood fill', () => {
