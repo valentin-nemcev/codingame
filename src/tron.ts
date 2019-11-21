@@ -420,33 +420,12 @@ class Game {
         }
     }
 
-    checkStep(
-        playerIdx: number,
-        dir: Dir,
-        {checkCorners = false}: {checkCorners?: boolean} = {},
-    ): boolean {
+    checkStep(playerIdx: number, dir: Dir): boolean {
         const player = this.players[playerIdx];
         const pos = player.pos;
         const nextPos = shift[dir](pos);
 
-        const cell = this.grid.getEmptyCellAt(nextPos, this.players);
-        if (!cell || (checkCorners && !this._checkSideCorners(nextPos, dir))) {
-            return false;
-        }
-
-        return true;
-    }
-
-    protected _checkSideCorners(pos: Pos, dir: Dir): boolean {
-        for (const d of sides[dir]) {
-            const cornerPos = shift[d](pos);
-            const emptyCorner = this.grid.getEmptyCellAt(
-                cornerPos,
-                this.players,
-            );
-            if (!emptyCorner) return true;
-        }
-        return false;
+        return Boolean(this.grid.getEmptyCellAt(nextPos, this.players));
     }
 
     stepBack(playerIdx: number): void {
@@ -660,19 +639,6 @@ class Iterator {
             availableDirs = [player.dir, ...player.getSideDirs()].filter(dir =>
                 this.game.checkStep(playerIdx, dir),
             );
-            // const checkForward = this.game.checkStep(playerIdx, player.dir);
-            // const nearEnemy =
-            //     this.depth < 10 && this.game.distToClosestPlayer() < 3;
-            // const checkCorners = !nearEnemy && checkForward;
-            //
-            // availableDirs = [
-            //     ...(checkForward ? [player.dir] : []),
-            //     ...player
-            //         .getSideDirs()
-            //         .filter(dir =>
-            //             this.game.checkStep(playerIdx, dir, {checkCorners}),
-            //         ),
-            // ];
         }
 
         if (availableDirs.length > 0) {
