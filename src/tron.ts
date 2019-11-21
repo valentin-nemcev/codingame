@@ -56,10 +56,21 @@ const TRAIL_CHARS: {[key: string]: string} = {
     DOWNDOWN: '┃ ║ │ ',
 };
 
-interface Pos {
-    x: number;
-    y: number;
-}
+type Pos = {
+    readonly x: number;
+    readonly y: number;
+} & {readonly __posTag: unique symbol};
+
+const posCache: ReadonlyArray<Pos> = Array(1 << 12)
+    .fill(null)
+    .map((_, i) => {
+        const x = (i >> 6) - 15;
+        const y = (i % (1 << 6)) - 15;
+        return {x, y} as Pos;
+    });
+
+export const pos = (x: number, y: number): Pos =>
+    posCache[((x + 15) << 6) + (y + 15)];
 
 function isPosUnset({x, y}: Pos): boolean {
     return x == -1 && y == -1;
@@ -76,10 +87,10 @@ function getDist(a: Pos, b: Pos): number {
 type Dir = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
 const dirs: Dir[] = ['LEFT', 'RIGHT', 'UP', 'DOWN'];
 const shift: {[dir in Dir]: (p: Pos) => Pos} = {
-    LEFT: ({x, y}) => ({x: x - 1, y}),
-    RIGHT: ({x, y}) => ({x: x + 1, y}),
-    UP: ({x, y}) => ({x, y: y - 1}),
-    DOWN: ({x, y}) => ({x, y: y + 1}),
+    LEFT: ({x, y}) => pos(x - 1, y),
+    RIGHT: ({x, y}) => pos(x + 1, y),
+    UP: ({x, y}) => pos(x, y - 1),
+    DOWN: ({x, y}) => pos(x, y + 1),
 };
 
 const deriveDir = (prev: Pos, next: Pos): Dir => {
@@ -131,8 +142,8 @@ function readState(readline: () => string): Input | null {
     const startPosList = [];
     for (let i = 0; i < playerCount; i++) {
         const [x0, y0, x, y] = readInts(readline);
-        startPosList.push({x: x0, y: y0});
-        posList.push({x, y});
+        startPosList.push(pos(x0, y0));
+        posList.push(pos(x, y));
     }
 
     return {myIdx, startPosList, posList};
@@ -317,7 +328,7 @@ class Grid {
         let result = '';
         for (let y = 0; y < this.height; y++) {
             let line = '';
-            for (let x = 0; x < this.width; x++) line += this.cellAt({x, y});
+            for (let x = 0; x < this.width; x++) line += this.cellAt(pos(x, y));
             result += line + '\n';
         }
         return result;

@@ -1,4 +1,4 @@
-import {readState, Game} from './tron';
+import {pos, readState, Game} from './tron';
 import sampleInput from './sample_input';
 import sampleInput2 from './sample_input2';
 
@@ -23,8 +23,8 @@ describe('Game', () => {
         const game = new Game();
         game.stepFromInput({
             myIdx: 0,
-            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}],
-            posList: [{x: 29, y: 9}, {x: 10, y: 1}],
+            startPosList: [pos(29, 9), pos(10, 1)],
+            posList: [pos(29, 9), pos(10, 1)],
         });
         expect(game.toString()).toMatchSnapshot();
     });
@@ -33,8 +33,8 @@ describe('Game', () => {
         const game = new Game();
         game.stepFromInput({
             myIdx: 1,
-            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}],
-            posList: [{x: 29, y: 8}, {x: 10, y: 1}],
+            startPosList: [pos(29, 9), pos(10, 1)],
+            posList: [pos(29, 8), pos(10, 1)],
         });
         expect(game.toString()).toMatchSnapshot();
     });
@@ -43,8 +43,8 @@ describe('Game', () => {
         const game = new Game();
         game.stepFromInput({
             myIdx: 2,
-            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}, {x: 16, y: 12}],
-            posList: [{x: 29, y: 8}, {x: 11, y: 1}, {x: 16, y: 12}],
+            startPosList: [pos(29, 9), pos(10, 1), pos(16, 12)],
+            posList: [pos(29, 8), pos(11, 1), pos(16, 12)],
         });
         expect(game.toString()).toMatchSnapshot();
     });
@@ -53,8 +53,8 @@ describe('Game', () => {
         const game = new Game();
         game.stepFromInput({
             myIdx: 2,
-            startPosList: [{x: 29, y: 9}, {x: 10, y: 1}, {x: 16, y: 12}],
-            posList: [{x: 29, y: 8}, {x: -1, y: -1}, {x: 16, y: 12}],
+            startPosList: [pos(29, 9), pos(10, 1), pos(16, 12)],
+            posList: [pos(29, 8), pos(-1, -1), pos(16, 12)],
         });
         expect(game.toString()).toMatchSnapshot();
         expect(game.players).toMatchSnapshot();
@@ -146,7 +146,7 @@ function collectResults(game: Game): string {
 describe('Iterator', () => {
     test('Single player', () => {
         const game = new Game({grid: {width: 4, height: 4}});
-        game.addPlayer({x: 0, y: 0});
+        game.addPlayer(pos(0, 0));
 
         expect(collectResults(game)).toMatchSnapshot();
 
@@ -155,8 +155,8 @@ describe('Iterator', () => {
 
     test('Two players', () => {
         const game = new Game({grid: {width: 4, height: 4}});
-        game.addPlayer({x: 0, y: 0});
-        game.addPlayer({x: 3, y: 3});
+        game.addPlayer(pos(0, 0));
+        game.addPlayer(pos(3, 3));
 
         expect(collectResults(game)).toMatchSnapshot();
 
@@ -166,9 +166,9 @@ describe('Iterator', () => {
 
     test('Three players', () => {
         const game = new Game({grid: {width: 4, height: 4}});
-        game.addPlayer({x: 0, y: 0});
-        game.addPlayer({x: 0, y: 3});
-        game.addPlayer({x: 3, y: 3});
+        game.addPlayer(pos(0, 0));
+        game.addPlayer(pos(0, 3));
+        game.addPlayer(pos(3, 3));
 
         expect(collectResults(game)).toMatchSnapshot();
 
@@ -178,9 +178,9 @@ describe('Iterator', () => {
 
     test('Two players, larger grid', () => {
         const game = new Game({grid: {width: 15, height: 10}});
-        game.addPlayer({x: 7, y: 5});
-        game.addPlayer({x: 0, y: 0});
-        game.stepPlayer(1, {x: 1, y: 0});
+        game.addPlayer(pos(7, 5));
+        game.addPlayer(pos(0, 0));
+        game.stepPlayer(1, pos(1, 0));
 
         game.iterator.startTurn({timeBudget: 150});
 
