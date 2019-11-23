@@ -10592,10 +10592,10 @@ exports[`Iterator Three players 2`] = `
 `;
 
 exports[`Iterator Three players 3`] = `
-"←      –        0
-→ 0.3415      489
-↑      –        0
-↓ 0.2341      252"
+"<      –        0      –
+> 0.3415      489 0.0000
+↑      –        0      –
+↓ 0.2341      252 0.0000"
 `;
 
 exports[`Iterator Two players 1`] = `
@@ -14115,16 +14115,16 @@ exports[`Iterator Two players 2`] = `
 `;
 
 exports[`Iterator Two players 3`] = `
-"←      –        0
-→ 0.5114      219
-↑      –        0
-↓ 0.5114      219"
+"<      –        0      –
+> 0.5114      219 0.0000
+↑      –        0      –
+↓ 0.5114      219 0.0000"
 `;
 
 exports[`Iterator Two players, larger grid 1`] = `
 Array [
   "LEFT: 6",
-  "RIGHT: 6",
+  "RIGHT: 5",
   "UP: 6",
   "DOWN: 6",
 ]

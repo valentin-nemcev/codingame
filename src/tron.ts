@@ -99,8 +99,8 @@ const sides: {readonly [dir in Dir]: [Dir, Dir]} = {
 };
 
 const dirToString: {readonly [dir in Dir]: string} = {
-    LEFT: '←',
-    RIGHT: '→',
+    LEFT: '<',
+    RIGHT: '>',
     UP: '↑',
     DOWN: '↓',
 };
@@ -516,7 +516,7 @@ class Game {
     }
 }
 
-type Result = {dir: Dir; scores: number[]};
+type Result = {dir: Dir; scores: number[]; timeout: boolean};
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
@@ -524,17 +524,20 @@ type Log = typeof log;
 
 class Results {
     public onResult = (score: number): void => void score;
-    readonly scores: {[d in Dir]: {sum: number; count: number}} = {
-        LEFT: {sum: 0, count: 0},
-        RIGHT: {sum: 0, count: 0},
-        UP: {sum: 0, count: 0},
-        DOWN: {sum: 0, count: 0},
+    readonly scores: {
+        [d in Dir]: {sum: number; count: number; timeouts: number};
+    } = {
+        LEFT: {sum: 0, count: 0, timeouts: 0},
+        RIGHT: {sum: 0, count: 0, timeouts: 0},
+        UP: {sum: 0, count: 0, timeouts: 0},
+        DOWN: {sum: 0, count: 0, timeouts: 0},
     };
 
     reset(): void {
         for (const d in this.scores) {
             this.scores[d as Dir].sum = 0;
             this.scores[d as Dir].count = 0;
+            this.scores[d as Dir].timeouts = 0;
         }
     }
 
@@ -551,24 +554,29 @@ class Results {
         return result;
     }
 
-    add({dir, scores}: Result): void {
+    add({dir, scores, timeout}: Result): void {
         const total = sum(scores);
         const score = scores[0] / total;
         this.onResult(score);
         const s = this.scores[dir];
         s.count++;
         s.sum += score;
+        s.timeouts += Number(timeout);
     }
 
     toString(): string {
         return Object.entries(this.scores)
             .map(
-                ([dir, {sum, count}]) =>
+                ([dir, {sum, count, timeouts}]) =>
                     dirToString[dir as Dir] +
                     ' ' +
                     (count > 0 ? (sum / count).toFixed(4) : '–').padStart(6) +
                     ' ' +
-                    String(count).padStart(8),
+                    String(count).padStart(8) +
+                    ' ' +
+                    (count > 0 ? (timeouts / count).toFixed(4) : '–').padStart(
+                        6,
+                    ),
             )
             .join('\n');
     }
@@ -621,21 +629,18 @@ class Iterator {
             this.iteration,
         );
         const {rss, heapTotal, heapUsed} = process.memoryUsage();
-        const {user, system} = process.cpuUsage();
         const toMb = (b: number): number => b / (1024 * 1024);
         this.log(
-            'Memory: rss %s mb, heap %s/%s mb\nCpu: user %d ms, system %d ms',
+            'Memory: rss %s mb, heap %s/%s mb',
             toMb(rss).toFixed(1),
             toMb(heapUsed).toFixed(1),
             toMb(heapTotal).toFixed(1),
-            Math.round(user / 1000),
-            Math.round(system / 1000),
         );
     }
 
     iterate(playerIdx: number, timeBudgetNs: bigint): void {
         if (timeBudgetNs <= 0n) {
-            return this.addResult();
+            return this.addResult(true);
         }
         if (playerIdx >= this.game.players.length) {
             this.depth++;
@@ -696,13 +701,14 @@ class Iterator {
         }
     }
 
-    addResult(): void {
+    addResult(timeout = false): void {
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
         if (this.dir) {
             this.resultCount++;
             this.results.add({
                 dir: this.dir,
                 scores: this.game.grid.floodfill(this.game.players),
+                timeout,
             });
         }
     }
@@ -738,7 +744,7 @@ function go(
 
         const dir = game.iterator.findBestDir();
 
-        // console.error(game.iterator.results.toString());
+        console.error(game.iterator.results.toString());
 
         writeline(dir || 'AAAAA!');
     }
