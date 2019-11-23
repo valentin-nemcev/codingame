@@ -1,21 +1,8 @@
-// import v8 from 'v8';
-
 declare const readline: () => string;
 
 function sum(arr: number[]): number {
     return arr.reduce((a, b) => a + b, 0);
 }
-
-// function shuffle<T extends Array<unknown>>(a: T): T {
-//     let j, x, i;
-//     for (i = a.length - 1; i > 0; i--) {
-//         j = Math.floor(Math.random() * (i + 1));
-//         x = a[i];
-//         a[i] = a[j];
-//         a[j] = x;
-//     }
-//     return a;
-// }
 
 const TRAIL_CHARS: {[key: string]: string} = {
     UNKNOWN: '? ',
@@ -80,18 +67,10 @@ function posToString({x, y}: Pos): string {
     return `${x}, ${y}`;
 }
 
-function getDist(a: Pos, b: Pos): number {
-    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
+type CellIdx = number & {readonly __cellIdx: unique symbol};
 
 type Dir = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
 const dirs: Dir[] = ['LEFT', 'RIGHT', 'UP', 'DOWN'];
-const shift: {[dir in Dir]: (p: Pos) => Pos} = {
-    LEFT: ({x, y}) => pos(x - 1, y),
-    RIGHT: ({x, y}) => pos(x + 1, y),
-    UP: ({x, y}) => pos(x, y - 1),
-    DOWN: ({x, y}) => pos(x, y + 1),
-};
 
 const deriveDir = (prev: Pos, next: Pos): Dir => {
     const xDiff = next.x - prev.x;
@@ -151,36 +130,27 @@ function readState(readline: () => string): Input | null {
 
 class Player {
     trailLength = 0;
-    readonly startPos: Pos;
-    pos: Pos;
+    readonly startPos: CellIdx;
+    cellIdx: CellIdx;
     dir: Dir | null = null;
     isDead = false;
-    constructor(pos: Pos) {
-        this.pos = this.startPos = pos;
+    constructor(cellIdx: CellIdx) {
+        this.cellIdx = this.startPos = cellIdx;
         this.trailLength = 1;
     }
     private _assertAlive(): void {
         if (this.isDead) throw new Error('Player is dead');
     }
-    private _dirUnsetErr(): Error {
-        return new Error('Player direction is unset');
-    }
-    stepToPos(pos: Pos): void {
+    step(cellIdx: CellIdx, dir: Dir): void {
         this._assertAlive();
-        this.dir = deriveDir(this.pos, pos);
-        this.pos = pos;
+        this.dir = dir;
+        this.cellIdx = cellIdx;
         this.trailLength++;
     }
-    step(): void {
+    stepBack(cellIdx: CellIdx, dir: Dir | null): void {
         this._assertAlive();
-        if (!this.dir) throw this._dirUnsetErr();
-        this.pos = shift[this.dir](this.pos);
-        this.trailLength++;
-    }
-    stepBack(): void {
-        this._assertAlive();
-        if (!this.dir) throw this._dirUnsetErr();
-        this.pos = shift[opposite[this.dir]](this.pos);
+        this.dir = dir;
+        this.cellIdx = cellIdx;
         this.trailLength--;
     }
     getSideDirs(): Dir[] {
@@ -253,7 +223,7 @@ class Grid {
     public readonly grid: Cell[] = [];
 
     public floodfillCounter = 0;
-    public floodfillQueue: Pos[] = [];
+    public floodfillQueue: CellIdx[] = [];
 
     constructor({width = 30, height = 20}: GridParams = {}) {
         this.width = width;
@@ -270,21 +240,59 @@ class Grid {
         return 0 <= x && x < this.width && 0 <= y && y < this.height;
     }
 
-    cellAt(pos: Pos): Cell {
+    posToCellIdx(pos: Pos): CellIdx {
         if (!this.isPosOnGrid(pos)) {
             throw new Error(
                 `Can't access cell outside grid: ${posToString(pos)}`,
             );
         }
-        return this.grid[pos.y * this.width + pos.x];
+        return (pos.y * this.width + pos.x) as CellIdx;
     }
 
-    getEmptyCellAt(pos: Pos, players: Player[]): Cell | null {
-        if (!this.isPosOnGrid(pos)) return null;
-        const cell = this.grid[pos.y * this.width + pos.x];
-        if (!cell.isEmpty(players)) return null;
+    cellIdxToPos(cellIdx: CellIdx): Pos {
+        return pos(cellIdx % this.width, Math.floor(cellIdx / this.width));
+    }
 
-        return cell;
+    safeShiftCellIdx(dir: Dir, cellIdx: CellIdx): CellIdx {
+        const c = cellIdx as number;
+        switch (dir) {
+            case 'LEFT':
+                return (c - 1) as CellIdx;
+            case 'RIGHT':
+                return (c + 1) as CellIdx;
+            case 'UP':
+                return (c - this.width) as CellIdx;
+            case 'DOWN':
+                return (c + this.width) as CellIdx;
+        }
+    }
+
+    shiftCellIdx(dir: Dir, cellIdx: CellIdx): CellIdx | null {
+        let x = cellIdx % this.width;
+        let y = Math.floor(cellIdx / this.width);
+        switch (dir) {
+            case 'LEFT':
+                x--;
+                if (x < 0) return null;
+                break;
+            case 'RIGHT':
+                x++;
+                if (x >= this.width) return null;
+                break;
+            case 'UP':
+                y--;
+                if (y < 0) return null;
+                break;
+            case 'DOWN':
+                y++;
+                if (y >= this.height) return null;
+                break;
+        }
+        return (y * this.width + x) as CellIdx;
+    }
+
+    cellAt(cellIdx: CellIdx): Cell {
+        return this.grid[cellIdx];
     }
 
     floodfill(players: Player[]): number[] {
@@ -296,19 +304,23 @@ class Grid {
         players.forEach((p, i) => {
             if (p.isDead) return;
             result[i]++;
-            const cell = this.cellAt(p.pos);
+            const cell = this.cellAt(p.cellIdx);
             cell.markDistance(i, 0, this.floodfillCounter);
-            queue[end++] = p.pos;
+            queue[end++] = p.cellIdx;
         });
         for (;;) {
             if (begin >= end) break;
-            const pos = queue[begin++];
-            const cell = this.cellAt(pos);
+            const cellIdx = queue[begin++];
+            const cell = this.cellAt(cellIdx);
             for (let i = 0; i < dirs.length; i++) {
                 const dir = dirs[i];
-                const p = shift[dir](pos);
-                const c = this.getEmptyCellAt(p, players);
-                if (!c || c.floodfillCounter === this.floodfillCounter) {
+                const cIdx = this.shiftCellIdx(dir, cellIdx);
+                if (cIdx == null) continue;
+                const c = this.cellAt(cIdx);
+                if (
+                    !c.isEmpty(players) ||
+                    c.floodfillCounter === this.floodfillCounter
+                ) {
                     continue;
                 }
                 c.markDistance(
@@ -317,7 +329,7 @@ class Grid {
                     this.floodfillCounter,
                 );
                 result[cell.distanceTo]++;
-                queue[end++] = p;
+                queue[end++] = cIdx;
             }
         }
 
@@ -328,7 +340,9 @@ class Grid {
         let result = '';
         for (let y = 0; y < this.height; y++) {
             let line = '';
-            for (let x = 0; x < this.width; x++) line += this.cellAt(pos(x, y));
+            for (let x = 0; x < this.width; x++) {
+                line += this.cellAt(this.posToCellIdx(pos(x, y)));
+            }
             result += line + '\n';
         }
         return result;
@@ -357,17 +371,6 @@ class Game {
         );
     }
 
-    distToClosestPlayer(): number {
-        let closestDist = Number.MAX_SAFE_INTEGER;
-        const player = this.players[0];
-        this.players.forEach((p, i) => {
-            if (i === 0 || p.isDead) return;
-            const dist = getDist(p.pos, player.pos);
-            if (dist < closestDist) closestDist = dist;
-        });
-        return closestDist;
-    }
-
     markPlayerDead(playerIdx: number): void {
         this.players[playerIdx].isDead = true;
         this.deadCount++;
@@ -379,8 +382,11 @@ class Game {
     }
 
     addPlayer(pos: Pos): void {
-        this.players.push(new Player(pos));
-        this.grid.cellAt(pos).markTrail(this.players.length - 1, this.players);
+        const cellIdx = this.grid.posToCellIdx(pos);
+        this.players.push(new Player(cellIdx));
+        this.grid
+            .cellAt(cellIdx)
+            .markTrail(this.players.length - 1, this.players);
     }
 
     stepPlayer(playerIdx: number, pos: Pos): void {
@@ -389,16 +395,18 @@ class Game {
             if (!player.isDead) this.markPlayerDead(playerIdx);
             return;
         }
-        player.stepToPos(pos);
-        this.grid.cellAt(pos).markTrail(playerIdx, this.players);
+
+        const cellIdx = this.grid.posToCellIdx(pos);
+        const dir = deriveDir(this.grid.cellIdxToPos(player.cellIdx), pos);
+        player.step(cellIdx, dir);
+        this.grid.cellAt(cellIdx).markTrail(playerIdx, this.players);
     }
 
-    stepPlayerDir(playerIdx: number, dir: Dir): void {
+    safeStepPlayerDir(playerIdx: number, dir: Dir): void {
         const player = this.players[playerIdx];
-        player.dir = dir;
-        player.step();
-
-        this.grid.cellAt(player.pos).markTrail(playerIdx, this.players);
+        const cellIdx = this.grid.safeShiftCellIdx(dir, player.cellIdx);
+        player.step(cellIdx, dir);
+        this.grid.cellAt(cellIdx).markTrail(playerIdx, this.players);
     }
 
     stepFromInput(input: Input): void {
@@ -422,18 +430,29 @@ class Game {
 
     checkStep(playerIdx: number, dir: Dir): boolean {
         const player = this.players[playerIdx];
-        const pos = player.pos;
-        const nextPos = shift[dir](pos);
+        const cellIdx = this.grid.shiftCellIdx(dir, player.cellIdx);
 
-        return Boolean(this.grid.getEmptyCellAt(nextPos, this.players));
+        return (
+            cellIdx != null && this.grid.cellAt(cellIdx).isEmpty(this.players)
+        );
     }
 
     stepBack(playerIdx: number): void {
         const player = this.players[playerIdx];
-        const cell = this.grid.cellAt(player.pos);
+        const cell = this.grid.cellAt(player.cellIdx);
+
+        if (!player.dir) {
+            throw new Error('Player direction is unset');
+        }
+        const cellIdx = this.grid.safeShiftCellIdx(
+            opposite[player.dir],
+            player.cellIdx,
+        );
+
+        const prevCell = this.grid.cellAt(cellIdx);
+        player.stepBack(cellIdx, prevCell.dir);
+
         cell.unmarkTrail();
-        player.stepBack();
-        player.dir = this.grid.cellAt(player.pos).dir;
     }
 
     toString(): string {
@@ -447,8 +466,8 @@ class Game {
             const i = cell.distanceTo * 4 + Number(cell.distance % 5 == 0) * 2;
             return TRAIL_CHARS.FILL.slice(i, i + 2);
         });
-        const draw = (pos: Pos, c: string): void => {
-            canvas[pos.y * this.grid.width + pos.x] = c;
+        const draw = (cellIdx: CellIdx, c: string): void => {
+            canvas[cellIdx] = c;
         };
         const getTrail = (
             playerIdx: number,
@@ -463,18 +482,21 @@ class Game {
         };
         this.players.forEach((player, i) => {
             if (player.isDead) return;
-            let headPos: Pos | null = null;
+            let headCellIdx: CellIdx | null = null;
             let headDir: Dir | null = null;
-            let tailPos = player.pos;
-            let tailDir = this.grid.cellAt(tailPos).dir;
+            let tailCellIdx = player.cellIdx;
+            let tailDir = this.grid.cellAt(tailCellIdx).dir;
             for (;;) {
-                if (headDir && headPos) {
-                    tailPos = shift[opposite[headDir]](headPos);
-                    tailDir = this.grid.cellAt(tailPos).dir;
+                if (headDir && headCellIdx != null) {
+                    tailCellIdx = this.grid.safeShiftCellIdx(
+                        opposite[headDir],
+                        headCellIdx,
+                    );
+                    tailDir = this.grid.cellAt(tailCellIdx).dir;
                 }
-                draw(tailPos, getTrail(i, tailDir, headDir));
+                draw(tailCellIdx, getTrail(i, tailDir, headDir));
                 if (!tailDir) break;
-                headPos = tailPos;
+                headCellIdx = tailCellIdx;
                 headDir = tailDir;
             }
         });
@@ -648,7 +670,7 @@ class Iterator {
                     this.dir = dir;
                 }
                 const f = availableDirs.length - i;
-                this.game.stepPlayerDir(playerIdx, dir);
+                this.game.safeStepPlayerDir(playerIdx, dir);
                 let startNs = 0n;
                 startNs = process.hrtime.bigint();
                 this.iterate(playerIdx + 1, timeBudgetNs / BigInt(f));

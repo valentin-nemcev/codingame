@@ -128,42 +128,24 @@ exports[`Game Dead player 1`] = `
 exports[`Game Dead player 2`] = `
 Array [
   Player {
+    "cellIdx": 376,
     "dir": null,
     "isDead": false,
-    "pos": Object {
-      "x": 16,
-      "y": 12,
-    },
-    "startPos": Object {
-      "x": 16,
-      "y": 12,
-    },
+    "startPos": 376,
     "trailLength": 1,
   },
   Player {
+    "cellIdx": 269,
     "dir": "UP",
     "isDead": false,
-    "pos": Object {
-      "x": 29,
-      "y": 8,
-    },
-    "startPos": Object {
-      "x": 29,
-      "y": 9,
-    },
+    "startPos": 299,
     "trailLength": 2,
   },
   Player {
+    "cellIdx": 40,
     "dir": null,
     "isDead": true,
-    "pos": Object {
-      "x": 10,
-      "y": 1,
-    },
-    "startPos": Object {
-      "x": 10,
-      "y": 1,
-    },
+    "startPos": 40,
     "trailLength": 1,
   },
 ]
