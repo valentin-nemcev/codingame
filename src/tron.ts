@@ -87,7 +87,7 @@ const opposite: {readonly [dir in Dir]: Dir} = {
     DOWN: 'UP',
 };
 
-const sides: {readonly [dir in Dir]: [Dir, Dir]} = {
+const SIDES: {readonly [dir in Dir]: [Dir, Dir]} = {
     LEFT: ['UP', 'DOWN'],
     RIGHT: ['UP', 'DOWN'],
     UP: ['LEFT', 'RIGHT'],
@@ -148,11 +148,6 @@ class Player {
         this.dir = dir;
         this.cellIdx = cellIdx;
         this.trailLength--;
-    }
-    getSideDirs(): Dir[] {
-        this._assertAlive();
-        if (this.dir == null) return dirs;
-        return sides[this.dir];
     }
 }
 
@@ -557,15 +552,15 @@ class Iterator {
 
     public turns = -1;
     public resultCount = 0;
-    public maxDepth = 0;
     public depth = 0;
+    public maxDepth = 0;
     public iteration = 0;
 
     startTurn({timeBudget = Number.MAX_SAFE_INTEGER} = {}): void {
         this.timeBudget = timeBudget;
         this.startTs = process.hrtime.bigint();
-        this.depth = 0;
         this.resultCount = 0;
+        this.depth = 0;
         this.maxDepth = 0;
         this.iteration = 0;
         this.turns++;
@@ -600,17 +595,16 @@ class Iterator {
         if (timeBudgetNs <= 0n) {
             return this.getResult(playerIdx);
         }
-        if (playerIdx >= this.game.players.length) {
-            this.depth++;
-            const result = this.iterate(0, timeBudgetNs);
-            this.depth--;
-            return result;
+        const players = this.game.players;
+        const playerCount = this.game.players.length;
+        if (playerIdx >= playerCount) {
+            playerIdx = 0;
         }
 
-        const player = this.game.players[playerIdx];
-        if (player.isDead) {
-            return this.iterate(playerIdx + 1, timeBudgetNs);
+        while (players[playerIdx].isDead) {
+            playerIdx = (playerIdx + 1) % playerCount;
         }
+        const player = players[playerIdx];
 
         this.iteration++;
 
@@ -620,12 +614,42 @@ class Iterator {
                 this.game.checkStep(playerIdx, dir),
             );
         } else {
-            availableDirs = [player.dir, ...player.getSideDirs()].filter(dir =>
-                this.game.checkStep(playerIdx, dir),
-            );
+            availableDirs = [];
+            if (this.game.checkStep(playerIdx, player.dir)) {
+                availableDirs.push(player.dir);
+            }
+
+            const sides = SIDES[player.dir];
+            for (let i = 0; i < sides.length; i++) {
+                if (this.game.checkStep(playerIdx, sides[i])) {
+                    availableDirs.push(sides[i]);
+                }
+            }
         }
 
-        if (availableDirs.length > 0) {
+        if (availableDirs.length === 0) {
+            this.game.markPlayerDead(playerIdx);
+            const alive = playerCount - this.game.deadCount;
+            let result: Result;
+            if (playerIdx === 0 || (playerCount > 1 && alive === 1)) {
+                result = this.getResult(playerIdx);
+            } else {
+                this.depth++;
+                result = this.iterate(playerIdx + 1, timeBudgetNs);
+                this.depth--;
+            }
+            this.game.unmarkPlayerDead(playerIdx);
+            return result;
+        } else if (availableDirs.length === 1) {
+            const dir = availableDirs[0];
+            this.game.safeStepPlayerDir(playerIdx, dir);
+            this.depth++;
+            const result = this.iterate(playerIdx + 1, timeBudgetNs);
+            this.depth--;
+            result.dir = dir;
+            this.game.stepBack(playerIdx);
+            return result;
+        } else {
             let bestResult: Result | null = null;
             for (let i = 0; i < availableDirs.length; i++) {
                 const dir = availableDirs[i];
@@ -633,10 +657,12 @@ class Iterator {
                 this.game.safeStepPlayerDir(playerIdx, dir);
                 let startNs = 0n;
                 startNs = process.hrtime.bigint();
+                this.depth++;
                 const result = this.iterate(
                     playerIdx + 1,
                     timeBudgetNs / BigInt(f),
                 );
+                this.depth--;
                 result.dir = dir;
                 if (result.isBetterThan(bestResult, playerIdx)) {
                     bestResult = result;
@@ -646,22 +672,6 @@ class Iterator {
             }
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             return bestResult!;
-        } else {
-            this.game.markPlayerDead(playerIdx);
-            const players = this.game.players.length;
-            const alive = players - this.game.deadCount;
-            if (playerIdx === 0 || (players > 1 && alive === 1)) {
-                const result = this.getResult(playerIdx);
-                this.game.unmarkPlayerDead(playerIdx);
-                return result;
-            } else if (players === 1 && alive === 0) {
-                this.game.unmarkPlayerDead(playerIdx);
-                return this.getResult(playerIdx);
-            } else {
-                const result = this.iterate(playerIdx + 1, timeBudgetNs);
-                this.game.unmarkPlayerDead(playerIdx);
-                return result;
-            }
         }
     }
 
