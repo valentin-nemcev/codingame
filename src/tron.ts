@@ -511,8 +511,12 @@ class Game {
 class Result {
     dir: Dir | null = null;
     scores: number[];
-    constructor(scores: number[]) {
+    depth: number;
+    timeout: boolean;
+    constructor(scores: number[], depth: number, timeout: boolean) {
         this.scores = scores;
+        this.depth = depth;
+        this.timeout = timeout;
     }
 
     isBetterThan(that: Result | null, playerIdx: number): boolean {
@@ -527,8 +531,11 @@ class Result {
     toString(): string {
         return (
             (this.dir ? dirToString[this.dir] : '-') +
-            '\n' +
-            this.scores.map(s => s.toFixed(2)).join('\n')
+            ' ' +
+            this.scores.map(s => s.toFixed(3)).join(' ') +
+            ' ' +
+            this.depth +
+            (this.timeout ? '+' : '')
         );
     }
 }
@@ -593,7 +600,7 @@ class Iterator {
 
     iterate(playerIdx: number, timeBudgetNs: bigint): Result {
         if (timeBudgetNs <= 0n) {
-            return this.getResult(playerIdx);
+            return this.getResult(playerIdx, true);
         }
         const players = this.game.players;
         const playerCount = this.game.players.length;
@@ -640,15 +647,6 @@ class Iterator {
             }
             this.game.unmarkPlayerDead(playerIdx);
             return result;
-        } else if (availableDirs.length === 1) {
-            const dir = availableDirs[0];
-            this.game.safeStepPlayerDir(playerIdx, dir);
-            this.depth++;
-            const result = this.iterate(playerIdx + 1, timeBudgetNs);
-            this.depth--;
-            result.dir = dir;
-            this.game.stepBack(playerIdx);
-            return result;
         } else {
             let bestResult: Result | null = null;
             for (let i = 0; i < availableDirs.length; i++) {
@@ -667,6 +665,7 @@ class Iterator {
                 if (result.isBetterThan(bestResult, playerIdx)) {
                     bestResult = result;
                 }
+                if (this.depth === 0) this.log(result.toString());
                 timeBudgetNs -= process.hrtime.bigint() - startNs;
                 this.game.stepBack(playerIdx);
             }
@@ -675,15 +674,16 @@ class Iterator {
         }
     }
 
-    getResult(playerIdx: number): Result {
+    getResult(playerIdx: number, timeout = false): Result {
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
+        this.resultCount++;
 
         const scores = this.game.grid.floodfill(this.game.players);
         let total = 0;
         for (let i = 0; i < scores.length; i++) total += scores[i];
         for (let i = 0; i < scores.length; i++) scores[i] /= total;
 
-        const result = new Result(scores);
+        const result = new Result(scores, this.depth, timeout);
         this.onResult(result, playerIdx);
         return result;
     }
@@ -696,7 +696,6 @@ class Iterator {
         );
 
         this.printTurnStats();
-        this.log(result.toString());
         return result.dir;
     }
 }
