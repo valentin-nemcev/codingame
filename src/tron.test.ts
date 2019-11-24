@@ -131,11 +131,12 @@ function sideBySide(...inputs: string[]): string {
 
 function collectResults(game: Game): string {
     const results: [string, string, string][] = [];
+
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    game.iterator.results.onResult = (score, playerIdx): void => {
+    game.iterator.onResult = (result, playerIdx): void => {
         const i = results.length;
         if (playerIdx >= 0) game.unmarkPlayerDead(playerIdx);
-        results.push([game.toString(), score.toFixed(4), '#' + i]);
+        results.push([game.toString(), result.toString(), '#' + i]);
         if (playerIdx >= 0) game.markPlayerDead(playerIdx);
     };
     game.iterator.findBestDir();
@@ -163,7 +164,6 @@ describe('Iterator', () => {
         expect(collectResults(game)).toMatchSnapshot();
 
         expect(game.toString()).toMatchSnapshot();
-        expect(game.iterator.results.toString()).toMatchSnapshot();
     });
 
     test('Three players', () => {
@@ -175,7 +175,6 @@ describe('Iterator', () => {
         expect(collectResults(game)).toMatchSnapshot();
 
         expect(game.toString()).toMatchSnapshot();
-        expect(game.iterator.results.toString()).toMatchSnapshot();
     });
 
     test('Two players, larger grid', () => {
@@ -186,22 +185,8 @@ describe('Iterator', () => {
 
         game.iterator.startTurn({timeBudget: 150});
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        game.iterator.results.onResult = (score): void => {
-            // console.log(score);
-            if (isNaN(score)) {
-                game.players.forEach(p => (p.isDead = false));
-                console.log(game.toString());
-            }
-            // expect(score).toMatchSnapshot();
-            // expect(game.toString()).toMatchSnapshot();
-        };
-        game.iterator.findBestDir();
-        const approxScores = Object.entries(game.iterator.results.scores).map(
-            ([dir, {sum, count}]) =>
-                dir + ': ' + Math.round((sum / count) * 10),
-        );
-        console.log(approxScores);
-        expect(approxScores).toMatchSnapshot();
+        const results = game.iterator.findBestDir();
+        console.log(results);
+        expect(results).toMatchSnapshot();
     });
 });

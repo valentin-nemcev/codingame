@@ -12,5 +12,4 @@ game.stepFromInput({
     posList: posList,
 });
 
-game.iterator.findBestDir();
-console.log(game.iterator.results.toString());
+console.log(game.iterator.findBestDir());

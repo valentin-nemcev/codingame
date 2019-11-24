@@ -1,9 +1,5 @@
 declare const readline: () => string;
 
-function sum(arr: number[]): number {
-    return arr.reduce((a, b) => a + b, 0);
-}
-
 const TRAIL_CHARS: {[key: string]: string} = {
     UNKNOWN: '? ',
 
@@ -517,80 +513,44 @@ class Game {
     }
 }
 
-type Result = {dir: Dir; scores: number[]; timeout: boolean};
+class Result {
+    dir: Dir | null = null;
+    scores: number[];
+    constructor(scores: number[]) {
+        this.scores = scores;
+    }
+
+    isBetterThan(that: Result | null, playerIdx: number): boolean {
+        if (that == null) return true;
+        if (playerIdx === 0) return this.scores[0] > that.scores[0];
+        else if (this.scores[0] < that.scores[0]) return true;
+        else if (this.scores[0] === that.scores[0]) {
+            return this.scores[playerIdx] > that.scores[playerIdx];
+        } else return false;
+    }
+
+    toString(): string {
+        return (
+            (this.dir ? dirToString[this.dir] : '-') +
+            '\n' +
+            this.scores.map(s => s.toFixed(2)).join('\n')
+        );
+    }
+}
 
 const log = console.error.bind(console);
 const logNoop = (): void => {};
 type Log = typeof log;
 
-class Results {
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public onResult = (score: number, playerIdx: number): void => {};
-    readonly scores: {
-        [d in Dir]: {sum: number; count: number; timeouts: number};
-    } = {
-        LEFT: {sum: 0, count: 0, timeouts: 0},
-        RIGHT: {sum: 0, count: 0, timeouts: 0},
-        UP: {sum: 0, count: 0, timeouts: 0},
-        DOWN: {sum: 0, count: 0, timeouts: 0},
-    };
-
-    reset(): void {
-        for (const d in this.scores) {
-            this.scores[d as Dir].sum = 0;
-            this.scores[d as Dir].count = 0;
-            this.scores[d as Dir].timeouts = 0;
-        }
-    }
-
-    getDir(): Dir | null {
-        let result: Dir | null = null;
-        let maxScore = -Infinity;
-        for (const [key, {sum, count}] of Object.entries(this.scores)) {
-            const score = sum / count;
-            if (score > maxScore) {
-                maxScore = score;
-                result = key as Dir;
-            }
-        }
-        return result;
-    }
-
-    add({dir, scores, timeout}: Result, playerIdx: number): void {
-        const total = sum(scores);
-        const score = scores[0] / total;
-        this.onResult(score, playerIdx);
-        const s = this.scores[dir];
-        s.count++;
-        s.sum += score;
-        s.timeouts += Number(timeout);
-    }
-
-    toString(): string {
-        return Object.entries(this.scores)
-            .map(
-                ([dir, {sum, count, timeouts}]) =>
-                    dirToString[dir as Dir] +
-                    ' ' +
-                    (count > 0 ? (sum / count).toFixed(4) : '–').padStart(6) +
-                    ' ' +
-                    String(count).padStart(8) +
-                    ' ' +
-                    (count > 0 ? (timeouts / count).toFixed(4) : '–').padStart(
-                        6,
-                    ),
-            )
-            .join('\n');
-    }
-}
-
 class Iterator {
     private log: Log;
     constructor(readonly game: Game, log: Log = logNoop) {
         this.log = log;
-        this.results = new Results();
         this.startTurn();
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public onResult = (result: Result, playerIdx: number): void => {};
 
     private timeBudget = Number.MAX_SAFE_INTEGER;
     private startTs = 0n;
@@ -600,15 +560,11 @@ class Iterator {
     public maxDepth = 0;
     public depth = 0;
     public iteration = 0;
-    private dir: Dir | null = null;
-    public readonly results: Results;
 
     startTurn({timeBudget = Number.MAX_SAFE_INTEGER} = {}): void {
         this.timeBudget = timeBudget;
         this.startTs = process.hrtime.bigint();
         this.depth = 0;
-        this.dir = null;
-        this.results.reset();
         this.resultCount = 0;
         this.maxDepth = 0;
         this.iteration = 0;
@@ -640,21 +596,20 @@ class Iterator {
         );
     }
 
-    iterate(playerIdx: number, timeBudgetNs: bigint): void {
+    iterate(playerIdx: number, timeBudgetNs: bigint): Result {
         if (timeBudgetNs <= 0n) {
-            return this.addResult(-1, true);
+            return this.getResult(playerIdx);
         }
         if (playerIdx >= this.game.players.length) {
             this.depth++;
-            this.iterate(0, timeBudgetNs);
+            const result = this.iterate(0, timeBudgetNs);
             this.depth--;
-            return;
+            return result;
         }
 
         const player = this.game.players[playerIdx];
         if (player.isDead) {
-            this.iterate(playerIdx + 1, timeBudgetNs);
-            return;
+            return this.iterate(playerIdx + 1, timeBudgetNs);
         }
 
         this.iteration++;
@@ -671,62 +626,68 @@ class Iterator {
         }
 
         if (availableDirs.length > 0) {
+            let bestResult: Result | null = null;
             for (let i = 0; i < availableDirs.length; i++) {
                 const dir = availableDirs[i];
-                if (this.depth === 0 && playerIdx === 0) {
-                    this.dir = dir;
-                }
                 const f = availableDirs.length - i;
                 this.game.safeStepPlayerDir(playerIdx, dir);
                 let startNs = 0n;
                 startNs = process.hrtime.bigint();
-                this.iterate(playerIdx + 1, timeBudgetNs / BigInt(f));
+                const result = this.iterate(
+                    playerIdx + 1,
+                    timeBudgetNs / BigInt(f),
+                );
+                result.dir = dir;
+                if (result.isBetterThan(bestResult, playerIdx)) {
+                    bestResult = result;
+                }
                 timeBudgetNs -= process.hrtime.bigint() - startNs;
                 this.game.stepBack(playerIdx);
             }
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            return bestResult!;
         } else {
             this.game.markPlayerDead(playerIdx);
             const players = this.game.players.length;
             const alive = players - this.game.deadCount;
             if (playerIdx === 0 || (players > 1 && alive === 1)) {
-                this.addResult(playerIdx);
+                const result = this.getResult(playerIdx);
                 this.game.unmarkPlayerDead(playerIdx);
-                return;
+                return result;
             } else if (players === 1 && alive === 0) {
                 this.game.unmarkPlayerDead(playerIdx);
-                this.addResult(playerIdx);
-                return;
+                return this.getResult(playerIdx);
             } else {
-                this.iterate(playerIdx + 1, timeBudgetNs);
+                const result = this.iterate(playerIdx + 1, timeBudgetNs);
+                this.game.unmarkPlayerDead(playerIdx);
+                return result;
             }
-            this.game.unmarkPlayerDead(playerIdx);
         }
     }
 
-    addResult(playerIdx: number, timeout = false): void {
+    getResult(playerIdx: number): Result {
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
-        if (this.dir) {
-            this.resultCount++;
-            this.results.add(
-                {
-                    dir: this.dir,
-                    scores: this.game.grid.floodfill(this.game.players),
-                    timeout,
-                },
-                playerIdx,
-            );
-        }
+
+        const scores = this.game.grid.floodfill(this.game.players);
+        let total = 0;
+        for (let i = 0; i < scores.length; i++) total += scores[i];
+        for (let i = 0; i < scores.length; i++) scores[i] /= total;
+
+        const result = new Result(scores);
+        this.onResult(result, playerIdx);
+        return result;
     }
 
     findBestDir(): Dir | null {
-        this.iterate(
+        const result = this.iterate(
             0,
             BigInt(this.timeBudget) * 1_000_000n -
                 (process.hrtime.bigint() - this.startTs),
         );
 
         this.printTurnStats();
-        return this.results.getDir();
+        this.log(result.toString());
+        return result.dir;
     }
 }
 
@@ -749,13 +710,11 @@ function go(
 
         const dir = game.iterator.findBestDir();
 
-        console.error(game.iterator.results.toString());
-
         writeline(dir || 'AAAAA!');
     }
 }
 
-export {readState, Game, Results, go};
+export {readState, Game, go};
 if (require.main === module) {
     go(new Game({log}), readline, console.log.bind(console));
 }
