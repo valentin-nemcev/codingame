@@ -132,9 +132,11 @@ function sideBySide(...inputs: string[]): string {
 function collectResults(game: Game): string {
     const results: [string, string, string][] = [];
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    game.iterator.results.onResult = (score): void => {
+    game.iterator.results.onResult = (score, playerIdx): void => {
         const i = results.length;
+        if (playerIdx >= 0) game.unmarkPlayerDead(playerIdx);
         results.push([game.toString(), score.toFixed(4), '#' + i]);
+        if (playerIdx >= 0) game.markPlayerDead(playerIdx);
     };
     game.iterator.findBestDir();
     return results

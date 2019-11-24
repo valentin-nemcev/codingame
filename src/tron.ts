@@ -303,7 +303,7 @@ class Grid {
         const result = players.map(() => 0);
         players.forEach((p, i) => {
             if (p.isDead) return;
-            result[i]++;
+            result[i] += 80;
             const cell = this.cellAt(p.cellIdx);
             cell.markDistance(i, 0, this.floodfillCounter);
             queue[end++] = p.cellIdx;
@@ -312,15 +312,16 @@ class Grid {
             if (begin >= end) break;
             const cellIdx = queue[begin++];
             const cell = this.cellAt(cellIdx);
+            let score = 4;
             for (let i = 0; i < dirs.length; i++) {
                 const dir = dirs[i];
                 const cIdx = this.shiftCellIdx(dir, cellIdx);
                 if (cIdx == null) continue;
                 const c = this.cellAt(cIdx);
-                if (
-                    !c.isEmpty(players) ||
-                    c.floodfillCounter === this.floodfillCounter
-                ) {
+                if (!c.isEmpty(players)) continue;
+                if (c.floodfillCounter === this.floodfillCounter) {
+                    if (c.distanceTo !== cell.distanceTo) score--;
+                    else score++;
                     continue;
                 }
                 c.markDistance(
@@ -328,9 +329,9 @@ class Grid {
                     cell.distance + 1,
                     this.floodfillCounter,
                 );
-                result[cell.distanceTo]++;
                 queue[end++] = cIdx;
             }
+            result[cell.distanceTo] += score;
         }
 
         return result;
@@ -523,7 +524,8 @@ const logNoop = (): void => {};
 type Log = typeof log;
 
 class Results {
-    public onResult = (score: number): void => void score;
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public onResult = (score: number, playerIdx: number): void => {};
     readonly scores: {
         [d in Dir]: {sum: number; count: number; timeouts: number};
     } = {
@@ -554,10 +556,10 @@ class Results {
         return result;
     }
 
-    add({dir, scores, timeout}: Result): void {
+    add({dir, scores, timeout}: Result, playerIdx: number): void {
         const total = sum(scores);
         const score = scores[0] / total;
-        this.onResult(score);
+        this.onResult(score, playerIdx);
         const s = this.scores[dir];
         s.count++;
         s.sum += score;
@@ -640,7 +642,7 @@ class Iterator {
 
     iterate(playerIdx: number, timeBudgetNs: bigint): void {
         if (timeBudgetNs <= 0n) {
-            return this.addResult(true);
+            return this.addResult(-1, true);
         }
         if (playerIdx >= this.game.players.length) {
             this.depth++;
@@ -686,13 +688,13 @@ class Iterator {
             this.game.markPlayerDead(playerIdx);
             const players = this.game.players.length;
             const alive = players - this.game.deadCount;
-            if (players > 1 && alive === 1) {
-                this.addResult();
+            if (playerIdx === 0 || (players > 1 && alive === 1)) {
+                this.addResult(playerIdx);
                 this.game.unmarkPlayerDead(playerIdx);
                 return;
             } else if (players === 1 && alive === 0) {
                 this.game.unmarkPlayerDead(playerIdx);
-                this.addResult();
+                this.addResult(playerIdx);
                 return;
             } else {
                 this.iterate(playerIdx + 1, timeBudgetNs);
@@ -701,15 +703,18 @@ class Iterator {
         }
     }
 
-    addResult(timeout = false): void {
+    addResult(playerIdx: number, timeout = false): void {
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
         if (this.dir) {
             this.resultCount++;
-            this.results.add({
-                dir: this.dir,
-                scores: this.game.grid.floodfill(this.game.players),
-                timeout,
-            });
+            this.results.add(
+                {
+                    dir: this.dir,
+                    scores: this.game.grid.floodfill(this.game.players),
+                    timeout,
+                },
+                playerIdx,
+            );
         }
     }
 
