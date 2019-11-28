@@ -509,14 +509,23 @@ class Game {
 }
 
 class Result {
-    dir: Dir | null = null;
+    dirs: Dir[][];
     scores: number[];
     depth: number;
     timeout: boolean;
     constructor(scores: number[], depth: number, timeout: boolean) {
         this.scores = scores;
+        this.dirs = scores.map(() => []);
         this.depth = depth;
         this.timeout = timeout;
+    }
+
+    setDir(dir: Dir, playerIdx: number): void {
+        this.dirs[playerIdx].push(dir);
+    }
+
+    getDir(): Dir | null {
+        return this.dirs[0][this.dirs[0].length - 1];
     }
 
     isBetterThan(that: Result | null, playerIdx: number): boolean {
@@ -530,12 +539,21 @@ class Result {
 
     toString(): string {
         return (
-            (this.dir ? dirToString[this.dir] : '-') +
+            this.scores.map(s => s.toFixed(16)).join(' ') +
             ' ' +
-            this.scores.map(s => s.toFixed(3)).join(' ') +
+            String(this.depth).padStart(3) +
+            (this.timeout ? '+' : '') +
             ' ' +
-            this.depth +
-            (this.timeout ? '+' : '')
+            this.dirs
+                .map(dirs =>
+                    dirs
+                        .slice()
+                        .reverse()
+                        .map(d => dirToString[d])
+                        .join(''),
+                )
+                .filter(Boolean)
+                .join(' ')
         );
     }
 }
@@ -661,7 +679,7 @@ class Iterator {
                     timeBudgetNs / BigInt(f),
                 );
                 this.depth--;
-                result.dir = dir;
+                result.setDir(dir, playerIdx);
                 if (result.isBetterThan(bestResult, playerIdx)) {
                     bestResult = result;
                 }
@@ -696,7 +714,7 @@ class Iterator {
         );
 
         this.printTurnStats();
-        return result.dir;
+        return result.getDir();
     }
 }
 
