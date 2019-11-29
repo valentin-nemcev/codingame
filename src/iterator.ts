@@ -32,10 +32,10 @@ class Result {
 
     toString(): string {
         return (
-            this.scores.map(s => s.toFixed(16)).join(' ') +
+            this.scores.map(s => s.toFixed(6)).join(' ') +
             ' ' +
             String(this.depth).padStart(3) +
-            (this.timeout ? '+' : '') +
+            (this.timeout ? '+' : ' ') +
             ' ' +
             this.dirs
                 .map(dirs =>

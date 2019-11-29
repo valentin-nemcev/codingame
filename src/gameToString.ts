@@ -74,7 +74,7 @@ export default function gameToString(game: Game): string {
         let tailCellIdx = player.cellIdx;
         let tailDir = game.grid.cellAt(tailCellIdx).dir;
         for (;;) {
-            if (headDir && headCellIdx != null) {
+            if (headDir != null && headCellIdx != null) {
                 tailCellIdx = game.grid.safeShiftCellIdx(
                     oppositeDir(headDir),
                     headCellIdx,
@@ -82,7 +82,7 @@ export default function gameToString(game: Game): string {
                 tailDir = game.grid.cellAt(tailCellIdx).dir;
             }
             draw(tailCellIdx, getTrail(i, tailDir, headDir));
-            if (!tailDir) break;
+            if (tailDir == null) break;
             headCellIdx = tailCellIdx;
             headDir = tailDir;
         }
