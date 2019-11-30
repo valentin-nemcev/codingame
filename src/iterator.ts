@@ -161,31 +161,38 @@ export class Iterator {
         } else {
             let bestResult: Result | null = null;
             for (let i = 0; i < availableDirs.length; i++) {
-                const dir = availableDirs[i];
-                const f = availableDirs.length - i;
-                this.game.safeStepPlayerDir(playerIdx, dir);
                 let startNs = 0n;
                 startNs = process.hrtime.bigint();
+
+                const dir = availableDirs[i];
+                const f = availableDirs.length - i;
+
+                this.game.safeStepPlayerDir(playerIdx, dir);
+
                 this.depth++;
                 const result = this.iterate(
                     playerIdx + 1,
                     timeBudgetNs / BigInt(f),
                 );
                 this.depth--;
+
                 result.setDir(dir, playerIdx);
                 if (result.isBetterThan(bestResult, playerIdx)) {
                     bestResult = result;
                 }
-                if (this.depth === 0) this.log(result.toString());
-                timeBudgetNs -= process.hrtime.bigint() - startNs;
+
                 this.game.stepBack(playerIdx);
+
+                if (this.depth === 0) this.log(result.toString());
+
+                timeBudgetNs -= process.hrtime.bigint() - startNs;
             }
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             return bestResult!;
         }
     }
-    getScores(): number[] {
-        const scores = this.game.grid.floodfill(this.game.players);
+    getScores(initial = false): number[] {
+        const scores = this.game.grid.floodfill(this.game.players, initial);
         let total = 0;
         for (let i = 0; i < scores.length; i++) total += scores[i];
         for (let i = 0; i < scores.length; i++) scores[i] /= total;
@@ -202,7 +209,9 @@ export class Iterator {
     }
 
     findBestDir(): Dir | null {
-        this.log(new Result(this.getScores(), this.depth, false).toString());
+        this.log(
+            new Result(this.getScores(true), this.depth, false).toString(),
+        );
         const result = this.iterate(
             0,
             BigInt(this.timeBudget) * 1_000_000n -

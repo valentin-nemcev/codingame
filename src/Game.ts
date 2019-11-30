@@ -39,6 +39,7 @@ export class Cell {
 
     availableDirs: Dir[] = [];
 
+    controlledBy = -1;
     distanceTo = -1;
     distance = -1;
     floodfillCounter = 0;
@@ -75,7 +76,9 @@ export class Cell {
         playerIdx: number,
         distance: number,
         floodfillCounter: number,
+        initial = false,
     ): void {
+        if (initial) this.controlledBy = playerIdx;
         this.distanceTo = playerIdx;
         this.distance = distance;
         this.floodfillCounter = floodfillCounter;
@@ -167,7 +170,7 @@ class Grid {
         return this.grid[cellIdx];
     }
 
-    floodfill(players: Player[]): number[] {
+    floodfill(players: Player[], initial = false): number[] {
         this.floodfillCounter++;
         let begin = 0;
         let end = 0;
@@ -177,7 +180,7 @@ class Grid {
             if (p.isDead) return;
             result[i] += p.trailLength * 6;
             const cell = this.cellAt(p.cellIdx);
-            cell.markDistance(i, 0, this.floodfillCounter);
+            cell.markDistance(i, 0, this.floodfillCounter, initial);
             queue[end++] = p.cellIdx;
         });
         for (;;) {
@@ -200,6 +203,7 @@ class Grid {
                     cell.distanceTo,
                     cell.distance + 1,
                     this.floodfillCounter,
+                    initial,
                 );
                 queue[end++] = cIdx;
             }
@@ -241,6 +245,12 @@ export default class Game {
         return this.players.reduce(
             (count, p) => count + (p.isDead ? 0 : p.trailLength),
             0,
+        );
+    }
+    isPlayerInControl(playerIdx: number): boolean {
+        return (
+            this.grid.cellAt(this.players[playerIdx].cellIdx).controlledBy ===
+            playerIdx
         );
     }
 
@@ -332,4 +342,3 @@ export default class Game {
         return gameToString(this);
     }
 }
-
