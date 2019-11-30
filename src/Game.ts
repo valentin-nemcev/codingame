@@ -175,7 +175,7 @@ class Grid {
         const result = players.map(() => 0);
         players.forEach((p, i) => {
             if (p.isDead) return;
-            result[i] += 80;
+            result[i] += p.trailLength * 6;
             const cell = this.cellAt(p.cellIdx);
             cell.markDistance(i, 0, this.floodfillCounter);
             queue[end++] = p.cellIdx;

@@ -1,4 +1,6 @@
 declare const readline: () => string;
+import os from 'os';
+
 import {dirToWord} from './dir';
 import {pos} from './pos';
 import Game from './game';
@@ -11,7 +13,7 @@ function go(
     readline: () => string,
     writeline: (s: string) => void,
 ): void {
-    console.error(process.env);
+    console.error(os.cpus().length);
     console.error(process.version);
     console.error(process.execArgv);
     for (let turn = 0; ; turn++) {

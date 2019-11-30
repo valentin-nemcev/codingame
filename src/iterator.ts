@@ -34,7 +34,7 @@ class Result {
         return (
             this.scores.map(s => s.toFixed(6)).join(' ') +
             ' ' +
-            String(this.depth).padStart(3) +
+            (this.depth ? String(this.depth) : '').padStart(3) +
             (this.timeout ? '+' : ' ') +
             ' ' +
             this.dirs
@@ -184,22 +184,25 @@ export class Iterator {
             return bestResult!;
         }
     }
+    getScores(): number[] {
+        const scores = this.game.grid.floodfill(this.game.players);
+        let total = 0;
+        for (let i = 0; i < scores.length; i++) total += scores[i];
+        for (let i = 0; i < scores.length; i++) scores[i] /= total;
+        return scores;
+    }
 
     getResult(playerIdx: number, timeout = false): Result {
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
         this.resultCount++;
 
-        const scores = this.game.grid.floodfill(this.game.players);
-        let total = 0;
-        for (let i = 0; i < scores.length; i++) total += scores[i];
-        for (let i = 0; i < scores.length; i++) scores[i] /= total;
-
-        const result = new Result(scores, this.depth, timeout);
+        const result = new Result(this.getScores(), this.depth, timeout);
         this.onResult(result, playerIdx);
         return result;
     }
 
     findBestDir(): Dir | null {
+        this.log(new Result(this.getScores(), this.depth, false).toString());
         const result = this.iterate(
             0,
             BigInt(this.timeBudget) * 1_000_000n -
