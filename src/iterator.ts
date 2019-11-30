@@ -111,7 +111,7 @@ export class Iterator {
 
     iterate(playerIdx: number, timeBudgetNs: bigint): Result {
         if (timeBudgetNs <= 0n) {
-            return this.getResult(playerIdx, true);
+            return this.getResult(true);
         }
         const players = this.game.players;
         const playerCount = this.game.players.length;
@@ -150,13 +150,15 @@ export class Iterator {
             const alive = playerCount - this.game.deadCount;
             let result: Result;
             if (playerIdx === 0 || (playerCount > 1 && alive === 1)) {
-                result = this.getResult(playerIdx);
+                result = this.getResult();
+                this.game.unmarkPlayerDead(playerIdx);
+                this.onResult(result, playerIdx);
             } else {
                 this.depth++;
                 result = this.iterate(playerIdx + 1, timeBudgetNs);
                 this.depth--;
+                this.game.unmarkPlayerDead(playerIdx);
             }
-            this.game.unmarkPlayerDead(playerIdx);
             return result;
         } else {
             let bestResult: Result | null = null;
@@ -170,8 +172,11 @@ export class Iterator {
                 this.game.safeStepPlayerDir(playerIdx, dir);
 
                 this.depth++;
+                const nextPlayerIdx = this.game.isPlayerInControl(playerIdx)
+                    ? playerIdx + 1
+                    : playerIdx + 1;
                 const result = this.iterate(
-                    playerIdx + 1,
+                    nextPlayerIdx,
                     timeBudgetNs / BigInt(f),
                 );
                 this.depth--;
@@ -199,12 +204,11 @@ export class Iterator {
         return scores;
     }
 
-    getResult(playerIdx: number, timeout = false): Result {
+    getResult(timeout = false): Result {
         if (this.maxDepth < this.depth) this.maxDepth = this.depth;
         this.resultCount++;
 
         const result = new Result(this.getScores(), this.depth, timeout);
-        this.onResult(result, playerIdx);
         return result;
     }
 

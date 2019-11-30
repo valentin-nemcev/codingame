@@ -111,7 +111,7 @@ describe('Flood fill', () => {
     });
 });
 
-function sideBySide(...inputs: string[]): string {
+function sideBySide(leader: string, ...inputs: string[]): string {
     const inputLines = inputs.map(i => i.split('\n'));
     const inputWidths = inputLines.map(ll =>
         Math.max(0, ...ll.map(l => l.length)),
@@ -120,9 +120,12 @@ function sideBySide(...inputs: string[]): string {
     const length = Math.max(...inputLines.map(l => l.length));
     for (let i = 0; i < length; i++) {
         outputLines.push(
-            inputLines
-                .map((ll, j) => (ll[i] || '').padEnd(inputWidths[j]))
-                .join('  '),
+            [
+                leader + '│',
+                ...inputLines.map((ll, j) =>
+                    (ll[i] || '').padEnd(inputWidths[j]),
+                ),
+            ].join('  ') + '│',
         );
     }
 
@@ -133,17 +136,21 @@ function collectResults(game: Game): string {
     const results: [string, string, string][] = [];
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    game.iterator.onResult = (result, playerIdx): void => {
+    game.iterator.onResult = (): void => {
+        const result = game.iterator.getResult();
         const i = results.length;
-        if (playerIdx >= 0) game.unmarkPlayerDead(playerIdx);
-        results.push([game.toString(), result.toString(), '#' + i]);
-        if (playerIdx >= 0) game.markPlayerDead(playerIdx);
+        results.push(['#' + i, game.toString(), result.toString()]);
     };
     game.iterator.findBestDir();
-    return results
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(ss => sideBySide(...ss))
-        .join('\n\n');
+    return (
+        'Total: ' +
+        results.length +
+        '\n\n' +
+        results
+            .sort(([, a], [, b]) => (a == b ? 0 : a < b ? -1 : +1))
+            .map(ss => sideBySide(...ss))
+            .join('\n\n')
+    );
 }
 
 describe('Iterator', () => {
@@ -153,6 +160,7 @@ describe('Iterator', () => {
 
         expect(collectResults(game)).toMatchSnapshot();
 
+        game.grid.floodfillCounter++;
         expect(game.toString()).toMatchSnapshot();
     });
 
@@ -163,6 +171,7 @@ describe('Iterator', () => {
 
         expect(collectResults(game)).toMatchSnapshot();
 
+        game.grid.floodfillCounter++;
         expect(game.toString()).toMatchSnapshot();
     });
 
@@ -174,6 +183,7 @@ describe('Iterator', () => {
 
         expect(collectResults(game)).toMatchSnapshot();
 
+        game.grid.floodfillCounter++;
         expect(game.toString()).toMatchSnapshot();
     });
 
