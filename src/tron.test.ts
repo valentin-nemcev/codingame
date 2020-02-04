@@ -139,7 +139,11 @@ function collectResults(game: Game): string {
     game.iterator.onResult = (): void => {
         const result = game.iterator.getResult();
         const i = results.length;
-        results.push(['#' + i, game.toString(), result.toString()]);
+        results.push([
+            ('#' + i).padStart(3),
+            game.toString(),
+            result.toString(),
+        ]);
     };
     game.iterator.findBestDir();
     return (
@@ -147,7 +151,7 @@ function collectResults(game: Game): string {
         results.length +
         '\n\n' +
         results
-            .sort(([, a], [, b]) => (a == b ? 0 : a < b ? -1 : +1))
+            // .sort(([, a], [, b]) => (a == b ? 0 : a < b ? -1 : +1))
             .map(ss => sideBySide(...ss))
             .join('\n\n')
     );
@@ -164,7 +168,7 @@ describe('Iterator', () => {
         expect(game.toString()).toMatchSnapshot();
     });
 
-    test('Two players', () => {
+    test.only('Two players', () => {
         const game = new Game({grid: {width: 4, height: 4}});
         game.addPlayer(pos(0, 0));
         game.addPlayer(pos(3, 3));

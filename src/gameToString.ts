@@ -48,7 +48,7 @@ export default function gameToString(game: Game): string {
         ) {
             return TRAIL_CHARS.EMPTY;
         }
-        const i = cell.distanceTo * 4 + Number(cell.distance % 5 == 0) * 2;
+        const i = cell.distanceTo * 4 + Number(cell.isBorder) * 2;
         return TRAIL_CHARS.FILL.slice(i, i + 2);
     });
     const draw = (cellIdx: CellIdx, c: string): void => {

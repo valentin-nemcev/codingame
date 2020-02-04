@@ -110,8 +110,10 @@ export class Iterator {
     }
 
     iterate(playerIdx: number, timeBudgetNs: bigint): Result {
-        if (timeBudgetNs <= 0n) {
-            return this.getResult(true);
+        if (this.depth >= 4 || timeBudgetNs <= 0n) {
+            const result = this.getResult(true);
+            this.onResult(result, playerIdx);
+            return result;
         }
         const players = this.game.players;
         const playerCount = this.game.players.length;
@@ -172,9 +174,8 @@ export class Iterator {
                 this.game.safeStepPlayerDir(playerIdx, dir);
 
                 this.depth++;
-                const nextPlayerIdx = this.game.isPlayerInControl(playerIdx)
-                    ? playerIdx + 1
-                    : playerIdx + 1;
+                const nextPlayerIdx =
+                    this.depth != 2 ? playerIdx + 0 : playerIdx + 1;
                 const result = this.iterate(
                     nextPlayerIdx,
                     timeBudgetNs / BigInt(f),

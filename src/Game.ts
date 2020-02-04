@@ -42,6 +42,7 @@ export class Cell {
     controlledBy = -1;
     distanceTo = -1;
     distance = -1;
+    isBorder = false;
     floodfillCounter = 0;
 
     toString(): string {
@@ -72,6 +73,10 @@ export class Cell {
         }
     }
 
+    markBorder(): void {
+        this.isBorder = true;
+    }
+
     markDistance(
         playerIdx: number,
         distance: number,
@@ -82,6 +87,7 @@ export class Cell {
         this.distanceTo = playerIdx;
         this.distance = distance;
         this.floodfillCounter = floodfillCounter;
+        this.isBorder = false;
     }
 
     isEmpty(players: Player[]): boolean {
@@ -195,8 +201,10 @@ class Grid {
                 const c = this.cellAt(cIdx);
                 if (!c.isEmpty(players)) continue;
                 if (c.floodfillCounter === this.floodfillCounter) {
-                    if (c.distanceTo !== cell.distanceTo) score--;
-                    else score++;
+                    if (c.distanceTo !== cell.distanceTo) {
+                        c.markBorder();
+                        score--;
+                    } else score++;
                     continue;
                 }
                 c.markDistance(
